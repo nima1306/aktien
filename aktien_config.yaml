@@ -31,7 +31,7 @@ bericht:
 
 # ===== Insider-Daten (US: SEC Form 4, Deutschland: BaFin) =====
 insider:
-  sec_kontakt: "Vorname Nachname deine@mail.de"   # PFLICHT: die SEC verlangt Name + E-Mail im Abruf
+  sec_kontakt: "Matt Schulln mattschulln@gmail.com"  # PFLICHT: die SEC verlangt Name + E-Mail im Abruf
   tage: 90                                        # Käufe der letzten X Tage
   max_aktien: 600                                 # so viele US-Aktien werden geprüft
 
