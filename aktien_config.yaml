@@ -46,6 +46,9 @@ video:
     en: en-US-AndrewMultilingualNeural    # Name aus der Hörprobe hier eintragen
   tempo: "+5%"              # Sprechtempo: +0% ruhig, +5% natürlich, +10% zügig
   min_sekunden: 61.5        # TikTok zahlt nur für Videos über 1 Minute
+  ziel_sekunden: 68         # länger? dann spricht die Stimme automatisch etwas schneller (max. +15 %)
+  serie: true               # "Tag 12" im Video, Titel und Abschluss
+  aktuell_bevorzugen: true  # Aktien mit Quartalszahlen in den nächsten Tagen, großem Kurssprung oder Reddit-Trend zuerst
   chart_monate: 6
   musik: musik.mp3          # optional: lizenzfreie Musik als musik.mp3 hochladen, sonst ohne Musik
   musik_lautstaerke: 0.12

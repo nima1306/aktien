@@ -37,6 +37,7 @@ DEFAULT_VIDEO = {
     "liste_top": 150, "liste_filter": "alle", "wiederholen_nach_tagen": 180,
     "min_kaufsumme": 100_000, "gewicht_scanner": 0.4, "gewicht_insider": 0.6, "gewicht_stimmung": 0.1,
     "sperre_tage": 14, "archiv_tage": 10, "eigene_positionen": [],
+    "ziel_sekunden": 68, "serie": True, "aktuell_bevorzugen": True,
 }
 
 
@@ -115,7 +116,7 @@ def daten_paket(r, ins, n_aktien, preise, tage, monate, radar, modus, haelt):
     return a, ins, D
 
 
-def erstellen(a, ins, rad, D0, vcfg, n_aktien, demo=False):
+def erstellen(a, ins, rad, D0, vcfg, n_aktien, demo=False, tag_nr=None):
     """Rendert das Video in allen Sprachen. Gibt Einträge für das Archiv zurück."""
     os.makedirs("videos", exist_ok=True)
     tk = D0["ticker"].replace(".", "-")
@@ -123,8 +124,9 @@ def erstellen(a, ins, rad, D0, vcfg, n_aktien, demo=False):
     eintraege = []
     print(f"\nVideo: {D0['name']} ({D0['ticker']})")
     for lang in vcfg["sprachen"]:
-        sk = skript.bauen(a, ins, rad, n_aktien, lang, D0["monate"], D0["modus"], D0["haelt"], seed)
-        D = dict(D0, lang=lang, hook=sk["hook"], frage_kurz=sk["frage_kurz"], pro=sk["pro"], contra=sk["contra"])
+        sk = skript.bauen(a, ins, rad, n_aktien, lang, D0["monate"], D0["modus"], D0["haelt"], seed, tag_nr)
+        D = dict(D0, lang=lang, hook=sk["hook"], frage_kurz=sk["frage_kurz"], pro=sk["pro"], contra=sk["contra"],
+                 tag_nr=tag_nr)
         print(f"  [{lang}] Aufhänger: {sk['winkel']}")
         for s in sk["szenen"]:
             print(f"    ({s['name']}) {s['text']}")
@@ -203,9 +205,13 @@ def demo_daten(monate, art="us"):
         radar = {"reddit": None, "stocktwits": None, "news": {"stimmung": 0.22, "anzahl": 4}, "index": 61,
                  "label": "positiv", "quellen": 1}
         quelle = ("EUR", "BaFin")
-    if art == "liste":
+    if art in ("liste", "zahlen", "sprung"):
         kaeufe = []
         r.update(rang=4, score=78.2, warnungen=[])
+    if art == "zahlen":
+        r["_earnings"] = (date.today() + timedelta(days=2)).isoformat()
+    if art == "sprung":
+        r["_move_1d"] = 0.072
     from insider import zusammenfassung
     ins = zusammenfassung(r["ticker"], kaeufe, r["marketCap"], *quelle) if kaeufe else None
     return r, ins, preise, radar
@@ -256,6 +262,75 @@ def stimmprobe(vcfg, monate, tage, modus):
     archiv_aktualisieren(neu, vcfg, demo=True)
 
 
+# ---------------------------------------------------------------- Serie & aktuelle Themen
+
+def serien_tag():
+    """Tag-Nummer der Serie: zählt pro Kalendertag mit Video eins hoch (mehrere Läufe am selben Tag = gleiche Nummer)."""
+    pfad = os.path.join(SPEICHER, "serie.json")
+    s = json_laden(pfad, {"tag": 0, "datum": ""})
+    heute = date.today().isoformat()
+    if s.get("datum") != heute:
+        s = {"tag": int(s.get("tag", 0)) + 1, "datum": heute}
+        json_speichern(pfad, s)
+    return s["tag"]
+
+
+def aktualitaet_daten(tickers):
+    """Vortagesbewegung und nächster Quartalszahlen-Termin für die Kandidaten."""
+    import yfinance as yf
+    from concurrent.futures import ThreadPoolExecutor
+    out = {t: {} for t in tickers}
+    if not tickers:
+        return out
+    try:
+        df = yf.download(tickers, period="7d", auto_adjust=True, progress=False, group_by="ticker", threads=True)
+        for t in tickers:
+            try:
+                c = (df[t]["Close"] if len(tickers) > 1 else df["Close"]).dropna()
+                c = c.iloc[:, 0] if hasattr(c, "columns") else c
+                if len(c) >= 2:
+                    out[t]["move"] = float(c.iloc[-1] / c.iloc[-2] - 1)
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"  Kursbewegungen nicht abrufbar ({str(e)[:60]})")
+
+    def termin(t):
+        try:
+            cal = yf.Ticker(t).calendar
+            d = cal.get("Earnings Date") if isinstance(cal, dict) else None
+            if d is not None:
+                d0 = d[0] if isinstance(d, (list, tuple)) and d else d
+                return t, str(d0)[:10]
+        except Exception:
+            pass
+        return t, None
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        for t, d in pool.map(termin, tickers):
+            if d:
+                out[t]["earnings"] = d
+    return out
+
+
+def aktualitaet_score(info, rd):
+    """0-100: Wie sehr ist die Aktie gerade Thema? (Zahlen bald, großer Kurssprung, Reddit-Trend)"""
+    s = 0
+    e = info.get("earnings")
+    if e:
+        try:
+            n = (date.fromisoformat(e) - date.today()).days
+            if 0 <= n <= 7:
+                s += 45 - n * 3
+        except ValueError:
+            pass
+    mv = abs(info.get("move") or 0)
+    s += 35 if mv >= 0.06 else 25 if mv >= 0.04 else 12 if mv >= 0.025 else 0
+    if rd and rd.get("mentions", 0) >= 30:
+        s += 10 + (10 if rd["mentions"] >= 1.5 * max(rd.get("mentions_24h", 0), 1) else 0)
+    return min(100, s)
+
+
 # ---------------------------------------------------------------- Auswahl
 
 def insider_fuer(ticker, name, mcap, cfg):
@@ -274,7 +349,7 @@ def insider_fuer(ticker, name, mcap, cfg):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--demo", nargs="?", const="us", help="Testvideo mit Beispieldaten: us, liste oder dax")
+    ap.add_argument("--demo", nargs="?", const="us", help="Testvideo: us, liste, dax, zahlen oder sprung")
     ap.add_argument("--ticker", help="bestimmte Aktie erzwingen, z. B. NVDA oder SAP.DE")
     ap.add_argument("--modus", choices=["liste", "insider"], help="Modus für diesen Lauf")
     ap.add_argument("--stimmprobe", action="store_true", help="Hörproben aller Stimmen erzeugen")
@@ -296,7 +371,7 @@ def main():
     if args.demo:
         r, ins, preise, radar = demo_daten(monate, args.demo)
         a, ins, D = daten_paket(r, ins, 480, preise, tage, monate, radar, modus, r["ticker"] in eigene)
-        neu = erstellen(a, ins, D["radar"], D, vcfg, 480, demo=True)
+        neu = erstellen(a, ins, D["radar"], D, vcfg, 480, demo=True, tag_nr=12 if vcfg.get("serie", True) else None)
         archiv_aktualisieren(neu, vcfg, demo=True)
         return
 
@@ -317,6 +392,7 @@ def main():
     heute = date.today()
 
     auswahl = []                                                     # [(scanner-zeile, insider)]
+    akt = {}                                                         # Aktualität je Ticker (Zahlen-Termin, Vortag)
     if args.ticker:
         t = args.ticker.strip().upper()
         zeile = df[df["ticker"] == t]
@@ -334,6 +410,20 @@ def main():
         if not offen:                                                # alles durch -> mit den ältesten neu anfangen
             offen = sorted((r for _, r in kand.iterrows()), key=lambda r: verlauf.get(r["ticker"], ""))
         print(f"Listen-Modus: {len(offen)} Aktien der Top {len(kand)} noch ohne Video.")
+        if vcfg.get("aktuell_bevorzugen", True) and len(offen) > 1:
+            infos = aktualitaet_daten([r["ticker"] for r in offen])
+            akt.update(infos)
+            bewertet = []
+            for i, r in enumerate(offen):
+                sc = aktualitaet_score(infos.get(r["ticker"], {}), (reddit or {}).get(r["ticker"]))
+                bewertet.append((0.5 * r["score"] + sc - i * 0.05, sc, r))   # Rangliste bleibt Grundlage
+            bewertet.sort(key=lambda x: -x[0])
+            print("Aktuelle Themen unter den Kandidaten:")
+            for k, sc, r in bewertet[:5]:
+                inf = infos.get(r["ticker"], {})
+                print(f"  {r['ticker']:<8} Aktualität {sc:3.0f} | Score {r['score']:4.0f} | "
+                      f"Zahlen {inf.get('earnings', '-')} | Vortag {100 * (inf.get('move') or 0):+.1f} %")
+            offen = [r for _, _, r in bewertet]
         for r in offen[: int(vcfg["anzahl"])]:
             auswahl.append((r, insider_fuer(r["ticker"], r["name"], r["marketCap"], cfg)))
     else:                                                            # Insider-Modus
@@ -362,6 +452,10 @@ def main():
             print("Heute keine passende Insider-Story (min_kaufsumme evtl. senken oder modus: liste nutzen).")
 
     neu = []
+    fehlend = [r["ticker"] for r, _ in auswahl if r["ticker"] not in akt]
+    if fehlend:
+        akt.update(aktualitaet_daten(fehlend))
+    tag_nr = serien_tag() if auswahl and vcfg.get("serie", True) else None
     for r, ins in auswahl:
         try:
             preise = kursverlauf(r["ticker"], monate)
@@ -370,9 +464,12 @@ def main():
                 continue
             rad = (stimmung.radar(r["ticker"], r.get("news_stimmung"), r.get("news_anzahl"), reddit,
                                   mit_stocktwits=scfg.get("stocktwits", True)) if scfg.get("aktiv", True) else {})
-            a, ins2, D = daten_paket(r.to_dict(), ins, n_aktien, preise, tage, monate, rad, modus,
+            zeile = r.to_dict()
+            inf = akt.get(r["ticker"], {})
+            zeile.update(_move_1d=inf.get("move"), _earnings=inf.get("earnings"))
+            a, ins2, D = daten_paket(zeile, ins, n_aktien, preise, tage, monate, rad, modus,
                                      r["ticker"].upper() in eigene)
-            neu += erstellen(a, ins2, D["radar"], D, vcfg, n_aktien)
+            neu += erstellen(a, ins2, D["radar"], D, vcfg, n_aktien, tag_nr=tag_nr)
             verlauf[r["ticker"]] = heute.isoformat()
         except Exception as e:
             import traceback

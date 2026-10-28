@@ -203,7 +203,7 @@ def sprechen(szenen, vcfg, lang, tmp, sr=24000):
     return ton_ok
 
 
-def zeitplan(szenen, min_sek, lead=0.18, tail=0.42):
+def zeitplan(szenen, min_sek, lead=0.08, tail=0.28):
     for s in szenen:
         s["dauer"] = lead + s["sprech_dauer"] + tail
     total = sum(s["dauer"] for s in szenen)
@@ -233,26 +233,20 @@ class Szenen:
     # ---- 1 Hook
     def hook(self, d, t, dur):
         D, hk = self.D, self.D["hook"]
-        a = anim(t, 0.0, 0.45)
-        pill(d, W / 2, 380 - 30 * (1 - a), D["tag"], font(56, "black"), with_alpha(C["green"], a),
-             with_alpha(C["bg"], a), (34, 14), "c")
-        center(d, D["kurzname"], 490, passend(d, D["kurzname"], "bold", 64, W - 2 * M),
-               with_alpha(C["ink"], anim(t, 0.15)))
-        center(d, hk["kicker"], 640, font(58, "black"), with_alpha(C["muted"], anim(t, 0.3)))
-        p = anim(t, 0.3, 1.4)
-        if hk.get("von_oben"):                                        # Rang zählt von unten nach oben
-            v = hk["wert"] + (D["n_aktien"] - hk["wert"]) * (1 - p)
-        else:
-            v = hk["wert"] * p
-        txt = hk["fmt"](v if p < 1 else hk["wert"])
-        f = passend(d, txt, "black", 170, W - 2 * M, 90)
-        center(d, txt, 720, f, with_alpha(C[hk.get("farbe", "green")], anim(t, 0.3)))
-        center(d, hk["sub"], 930, passend(d, hk["sub"], "medium", 48, W - 2 * M), with_alpha(C["ink"], anim(t, 1.2)))
+        # Alles steht ab dem ersten Bild (die ersten 1-2 Sekunden entscheiden übers Weiterwischen).
+        pill(d, W / 2, 380, D["tag"], font(56, "black"), C["green"], C["bg"], (34, 14), "c")
+        center(d, D["kurzname"], 490, passend(d, D["kurzname"], "bold", 64, W - 2 * M), C["ink"])
+        center(d, hk["kicker"], 640, font(58, "black"), C["muted"])
+        txt = hk["text"] if hk.get("text") else hk["fmt"](hk["wert"])
+        pop = 1 + 0.08 * math.sin(min(1.0, t / 0.35) * math.pi)          # kurzer Puls, kein Ausblenden
+        f = passend(d, txt, "black", int(170 * pop), int((W - 2 * M) * pop), 90)
+        center(d, txt, 720 - (f.size - 170) * 0.5, f, C[hk.get("farbe", "green")])
+        center(d, hk["sub"], 930, passend(d, hk["sub"], "medium", 48, W - 2 * M), C["ink"])
         n = min(hk.get("personen") or 0, 8)                           # Personen-Symbole bei Insiderkäufen
         size, gap = 74, 26
         x0 = (W - (n * size + (n - 1) * gap)) / 2
         for i in range(n):
-            ai = anim(t, 1.4 + i * 0.15, 0.3)
+            ai = anim(t, 0.15 + i * 0.08, 0.25)
             if ai <= 0:
                 continue
             x, y = x0 + i * (size + gap), 1050 + 20 * (1 - ai)
@@ -617,6 +611,8 @@ class Szenen:
         center(d, self.T("nur_daten"), 942, font(32, "medium"), with_alpha(C["muted"], a2))
         a3 = anim(t, 1.4, 0.5)
         cta = self.T("follow_insider" if D.get("modus") == "insider" else "follow_liste")
+        if D.get("tag_nr") and D.get("modus") != "insider":
+            cta = f"{'Morgen: Tag' if self.lang == 'de' else 'Tomorrow: day'} {D['tag_nr'] + 1}"
         center(d, cta, 1070, font(44, "bold"), with_alpha(C["ink"], a3))
         x, yb = W / 2, 1150 + 10 * math.sin(t * 4)
         d.polygon([(x - 34, yb), (x + 34, yb), (x, yb + 40)], fill=with_alpha(C["green"], a3))
@@ -656,8 +652,11 @@ def rahmen(d, t, total, D):
     lang = D["lang"]
     d.rounded_rectangle([M, 206, W - M, 214], radius=4, fill=(30, 36, 45))
     d.rounded_rectangle([M, 206, M + (W - 2 * M) * min(1, t / total), 214], radius=4, fill=C["green"])
-    pill(d, M, 238, L(lang, "brand_insider" if D.get("modus") == "insider" else "brand"), font(28, "black"),
-         C["green"], C["bg"], (18, 9))
+    x = pill(d, M, 238, L(lang, "brand_insider" if D.get("modus") == "insider" else "brand"), font(28, "black"),
+             C["green"], C["bg"], (18, 9))
+    if D.get("tag_nr"):
+        pill(d, x + 12, 238, f"{'TAG' if lang == 'de' else 'DAY'} {D['tag_nr']}", font(28, "black"), C["ink"], C["bg"],
+             (18, 9))
     dt, txt_d = font(28, "bold"), heute(lang)
     d.text((W - M - tw(d, txt_d, dt), 246), txt_d, font=dt, fill=C["muted"])
     txt = f"{L(lang, 'disclaimer')} · {L(lang, 'daten')}: {D['quellen']}"
@@ -675,6 +674,17 @@ def render(D, szenen, vcfg, out_path):
         sr = 24000
         ton_ok = sprechen(szenen, vcfg, D["lang"], tmp, sr)
         total = zeitplan(szenen, float(vcfg.get("min_sekunden", 61.5)))
+        ziel = float(vcfg.get("ziel_sekunden", 0) or 0)
+        if ton_ok and ziel and total > ziel + 2:                    # zu lang -> etwas schneller sprechen (max. +15 %)
+            try:
+                basis = int(str(vcfg.get("tempo", "+5%")).replace("%", ""))
+            except ValueError:
+                basis = 5
+            extra = min(15, int(round((total / ziel - 1) * 100)))
+            neu = f"{basis + extra:+d}%"
+            print(f"  [{D['lang']}] {total:.0f} s ist zu lang -> Tempo {neu}")
+            ton_ok = sprechen(szenen, dict(vcfg, tempo=neu), D["lang"], tmp, sr)
+            total = zeitplan(szenen, float(vcfg.get("min_sekunden", 61.5)))
         print(f"  [{D['lang']}] Länge: {total:.1f} s")
         audio = np.zeros(int(total * sr) + sr, dtype=np.float32)
         for s in szenen:
@@ -718,7 +728,7 @@ def render(D, szenen, vcfg, out_path):
                 fn(ld, tl, s["dauer"], img=layer)
             else:
                 fn(ld, tl, s["dauer"])
-            a = ease(tl / 0.3)                                        # Szenenwechsel: einblenden + leicht gleiten
+            a = ease(tl / 0.25) if si > 0 else 1.0                    # Szenenwechsel: einblenden + leicht gleiten
             if a < 1:
                 la = np.array(layer)
                 la[..., 3] = (la[..., 3] * a).astype(np.uint8)

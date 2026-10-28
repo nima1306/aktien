@@ -65,9 +65,16 @@ T = {
                 "{kn} im Daten-Check: {score} von 100 Punkten in meinem Scanner. Was steckt hinter der Zahl?",
                 "Heute auf dem Prüfstand: {kn}. Acht Kriterien, ein klares Bild.",
             ],
+            "earnings": [
+                "{wann} legt {kn} Quartalszahlen vor. Hier ist alles, was du vorher wissen musst.",
+                "Zahlen-Woche bei {kn}: {wann} wird es spannend. Lohnt sich der Blick vorher?",
+            ],
+            "move": [
+                "{kn} {bewegung} an einem einzigen Tag. Überreaktion oder Signal? Schauen wir auf die Zahlen.",
+                "{bewegung} in 24 Stunden: {kn} bewegt den Markt. Was sagen die Daten dazu?",
+            ],
         },
-        "intro": ["Die Eckdaten: {kn} aus der Branche {branche}, Börsenwert rund {mcap}, Kurs aktuell {kurs}. "
-                  "{rendite} {kgv}"],
+        "intro": ["Die Eckdaten: {kn}, Branche {branche}, Börsenwert rund {mcap}, Kurs {kurs}. {rendite} {kgv}"],
         "rendite_plus": "Auf Jahressicht steht ein Plus von {x}.",
         "rendite_minus": "Auf Jahressicht ein Minus von {x}.",
         "rendite_flat": "Auf Jahressicht praktisch unverändert.",
@@ -83,11 +90,11 @@ T = {
         "trend_up": "Sie liegt {x} über dem 200-Tage-Durchschnitt, der langfristige Trend ist also intakt.",
         "trend_down": "Sie notiert {x} unter dem 200-Tage-Durchschnitt, der Trend ist angeschlagen.",
         "trend_flat": "Sie liegt genau am 200-Tage-Durchschnitt, einer wichtigen Marke für viele Anleger.",
-        "insider": ["Der größte Einzelkauf: {rolle} {name} mit {wert} am {datum}. {cluster} Und wichtig: Das sind "
-                    "Käufe am offenen Markt, keine geschenkten Aktienoptionen."],
+        "insider": ["Der größte Einzelkauf: {rolle} {name} mit {wert} am {datum}. {cluster} Alles echte Käufe am "
+                    "Markt, keine Aktienoptionen."],
         "cluster_n": "Insgesamt haben {n} verschiedene Insider innerhalb von {t} Tagen gekauft.",
         "cluster_k": "Insgesamt {k} Käufe in {t} Tagen.",
-        "netz_start": ["Und was sagt das Netz?", "Und die Stimmung im Netz?", "Wer redet eigentlich darüber?"],
+        "netz_start": ["Und im Netz?", "Und die Stimmung?", "Wer redet darüber?"],
         "rd_null": "Auf Reddit praktisch kein Thema.",
         "rd_wenig": "Auf Reddit kaum ein Thema, nur {m} Erwähnungen.",
         "rd_neu": "Reddit: plötzlich {m} Erwähnungen in 24 Stunden, vorher fast keine.",
@@ -96,13 +103,12 @@ T = {
         "st_bull": "StockTwits: {p} bullisch.", "st_bear": "Auf StockTwits überwiegen die Skeptiker, nur {p} bullisch.",
         "nw_pos": "Die Schlagzeilen sind überwiegend positiv.", "nw_neg": "Die Schlagzeilen sind eher negativ.",
         "nw_mix": "Die Schlagzeilen sind gemischt.", "hype": "Hype-Index: {i} von 100.",
-        "scanner": ["Mein Scanner vergleicht {n} Aktien nach acht Kriterien. {kn} kommt auf {score} von 100 Punkten, "
-                    "das ist Platz {rang}. {st}"],
+        "scanner": ["In meinem Scanner: {score} von 100 Punkten, Platz {rang} von {n}. {st}"],
         "stark": "Am stärksten: {x}.", "schwach1": "Die Schwachstelle: {x}.", "schwach": "Die Schwachstellen: {x}.",
         "pc": ["Was dafür spricht: {pro}. Was dagegen spricht: {contra}."],
-        "outro": ["Wie immer: keine Anlageberatung, nur Daten. {haelt}{cta} Und jetzt du: {frage}"],
+        "outro": ["Keine Anlageberatung, nur Daten. {haelt}{cta} Und jetzt du: {frage}"],
         "haelt": "Offenlegung: Ich besitze die Aktie selbst. ",
-        "cta_liste": "Morgen nehme ich mir die nächste Aktie aus meinem Scanner vor.",
+        "cta_liste": "Morgen kommt Tag {morgen}.", "cta_liste_ohne": "Morgen kommt die nächste Aktie.",
         "cta_insider": "Folg mir für die nächsten Insiderkäufe.",
         "und": "und",
     },
@@ -154,9 +160,16 @@ T = {
                 "{kn} under the microscope: {score} out of 100 in my scanner. What's behind that number?",
                 "Today on the test bench: {kn}. Eight criteria, one clear picture.",
             ],
+            "earnings": [
+                "{kn} reports earnings {wann}. Here's everything you need to know before.",
+                "Earnings week for {kn}: {wann} it gets exciting. Worth a look before the numbers?",
+            ],
+            "move": [
+                "{kn} {bewegung} in a single day. Overreaction or signal? Let's look at the numbers.",
+                "{bewegung} in 24 hours: {kn} is moving. What does the data say?",
+            ],
         },
-        "intro": ["The basics: {kn}, {branche} sector, market cap around {mcap}, currently trading at {kurs}. "
-                  "{rendite} {kgv}"],
+        "intro": ["The basics: {kn}, {branche} sector, about {mcap} market cap, trading at {kurs}. {rendite} {kgv}"],
         "rendite_plus": "Over the past year, it's up {x}.",
         "rendite_minus": "Over the past year, it's down {x}.",
         "rendite_flat": "Over the past year, it's roughly flat.",
@@ -172,11 +185,11 @@ T = {
         "trend_up": "It's {x} above its 200-day average, so the long-term trend is intact.",
         "trend_down": "It's {x} below its 200-day average, so the trend is damaged.",
         "trend_flat": "It's sitting right at its 200-day average, a key level for many investors.",
-        "insider": ["The largest single purchase: {rolle} {name}, {wert} on {datum}. {cluster} And importantly, these "
-                    "are open-market purchases, not free stock options."],
+        "insider": ["The largest single purchase: {rolle} {name}, {wert} on {datum}. {cluster} All real open-market "
+                    "buys, no stock options."],
         "cluster_n": "In total, {n} different insiders bought within {t} days.",
         "cluster_k": "That's {k} purchases in {t} days.",
-        "netz_start": ["So what's the internet saying?", "And the mood online?", "Who's actually talking about it?"],
+        "netz_start": ["And online?", "And the mood?", "Who's talking about it?"],
         "rd_null": "On Reddit, practically no one is talking about it.",
         "rd_wenig": "On Reddit, barely a topic, just {m} mentions.",
         "rd_neu": "Reddit: suddenly {m} mentions in 24 hours, almost none before.",
@@ -185,13 +198,12 @@ T = {
         "st_bull": "StockTwits: {p} bullish.", "st_bear": "On StockTwits the skeptics dominate, only {p} bullish.",
         "nw_pos": "Headlines are mostly positive.", "nw_neg": "Headlines lean negative.",
         "nw_mix": "Headlines are mixed.", "hype": "Hype index: {i} out of 100.",
-        "scanner": ["My scanner ranks {n} stocks on eight criteria. {kn} scores {score} out of 100, that's rank "
-                    "{rang}. {st}"],
+        "scanner": ["In my scanner: {score} out of 100, rank {rang} of {n}. {st}"],
         "stark": "Strongest areas: {x}.", "schwach1": "The weak spot: {x}.", "schwach": "Weak spots: {x}.",
         "pc": ["The bull case: {pro}. The bear case: {contra}."],
-        "outro": ["As always: not financial advice, just data. {haelt}{cta} Now over to you: {frage}"],
+        "outro": ["Not financial advice, just data. {haelt}{cta} Now over to you: {frage}"],
         "haelt": "Disclosure: I own this stock myself. ",
-        "cta_liste": "Tomorrow I'll break down the next stock from my scanner.",
+        "cta_liste": "Tomorrow is day {morgen}.", "cta_liste_ohne": "Tomorrow: the next stock.",
         "cta_insider": "Follow for the next insider buys.",
         "und": "and",
     },
@@ -209,6 +221,9 @@ FRAGEN = {
         "momentum": ("Würdest du jetzt noch einsteigen, oder auf einen Rücksetzer warten?", "Einsteigen oder warten?"),
         "dividend": ("Ist diese Dividende sicher, oder zu schön, um wahr zu sein?", "Sicher oder zu schön?"),
         "top": ("Was übersieht mein Scanner bei {kn}? Schreib es in die Kommentare.", "Was übersehe ich?"),
+        "earnings": ("Schlägt {kn} die Erwartungen oder enttäuscht es? Dein Tipp in die Kommentare.",
+                     "Dein Tipp für die Zahlen?"),
+        "move": ("Überreaktion oder erst der Anfang? Was meinst du?", "Überreaktion oder Anfang?"),
     },
     "en": {
         "insider": ("Do the insiders know more than the market, or are they just early? Tell me in the comments.",
@@ -219,9 +234,12 @@ FRAGEN = {
         "momentum": ("Would you still buy here, or wait for a pullback?", "Buy now or wait?"),
         "dividend": ("Is this dividend safe, or too good to be true?", "Safe or too good to be true?"),
         "top": ("What is my scanner missing on {kn}? Drop it in the comments.", "What am I missing?"),
+        "earnings": ("Will {kn} beat expectations or disappoint? Drop your prediction below.",
+                     "Your earnings prediction?"),
+        "move": ("Overreaction or just the beginning? What do you think?", "Overreaction or beginning?"),
     },
 }
-FRAGE_VON = {"insider": "insider", "still": "insider", "dip": "dip", "upside": "upside", "hype": "hype",
+FRAGE_VON = {"earnings": "earnings", "move": "move", "insider": "insider", "still": "insider", "dip": "dip", "upside": "upside", "hype": "hype",
              "momentum": "momentum", "dividend": "dividend", "top": "top", "score": "top"}
 
 
@@ -264,10 +282,36 @@ def kategorien_sortiert(a):
 
 # ---------------------------------------------------------------- Aufhänger (Hook-Winkel)
 
+def _tage_bis(iso):
+    try:
+        return (date.fromisoformat(str(iso)[:10]) - date.today()).days
+    except (TypeError, ValueError):
+        return None
+
+
+def wann_text(iso, lang):
+    """'morgen', 'am Donnerstag', 'heute' / 'tomorrow', 'on Thursday'."""
+    n = _tage_bis(iso)
+    d = date.fromisoformat(str(iso)[:10])
+    tage = {"de": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+            "en": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]}[lang]
+    if n == 0:
+        return "Heute" if lang == "de" else "today"
+    if n == 1:
+        return "Morgen" if lang == "de" else "tomorrow"
+    return f"Am {tage[d.weekday()]}" if lang == "de" else f"on {tage[d.weekday()]}"
+
+
 def winkel(a, ins, rad):
     """Welche Geschichte ist heute die stärkste? Gibt den Schlüssel des Aufhängers zurück."""
     kandidaten = [("score", 40)]
     rd = (rad or {}).get("reddit")
+    tage_bis = _tage_bis(a.get("_earnings"))
+    if tage_bis is not None and 0 <= tage_bis <= 7:
+        kandidaten.append(("earnings", 78 - tage_bis))
+    mv = _f(a.get("_move_1d"))
+    if mv is not None and abs(mv) >= 0.04:
+        kandidaten.append(("move", 62 + min(30, abs(mv) * 300)))
     if ins and ins.get("kaeufe"):
         still = rd is not None and rd["mentions"] < 10
         kandidaten.append(("still" if still else "insider", 60 + ins.get("insider_score", 0) / 2))
@@ -293,6 +337,15 @@ def winkel(a, ins, rad):
 def hook_bild(key, a, ins, rad, lang, n_aktien):
     """Was im Hook groß auf dem Bildschirm steht."""
     de = lang == "de"
+    if key == "earnings":
+        n = _tage_bis(a["_earnings"])
+        return {"kicker": "QUARTALSZAHLEN" if de else "EARNINGS", "text": datum(a["_earnings"][:10], lang, kurz=True),
+                "farbe": "gold", "sub": ("heute" if de else "today") if n == 0 else
+                (f"in {n} Tag{'en' if n != 1 else ''}" if de else f"in {n} day{'s' if n != 1 else ''}")}
+    if key == "move":
+        mv = a["_move_1d"]
+        return {"kicker": "AN EINEM TAG" if de else "IN ONE DAY", "wert": mv, "fmt": lambda v: prozent(v, lang),
+                "farbe": "green" if mv >= 0 else "red", "sub": f"Score {a['score']:.0f}/100"}
     if key in ("insider", "still"):
         iw = ins.get("waehrung", "USD")
         return {"kicker": "INSIDER KAUFEN" if de else "INSIDERS ARE BUYING", "wert": ins["summe"],
@@ -416,7 +469,7 @@ def pro_contra(a, ins, rad, lang):
 
 # ---------------------------------------------------------------- Skript bauen
 
-def bauen(a, ins, rad, n_aktien, lang="de", monate=6, modus="liste", haelt=False, seed=None):
+def bauen(a, ins, rad, n_aktien, lang="de", monate=6, modus="liste", haelt=False, seed=None, tag_nr=None):
     """Gibt {'szenen': [...], 'hook': {...}, 'frage_kurz', 'pro', 'contra', 'winkel'} zurück."""
     t = T[lang]
     seed = seed or f"{a['ticker']}{date.today()}"
@@ -434,7 +487,15 @@ def bauen(a, ins, rad, n_aktien, lang="de", monate=6, modus="liste", haelt=False
              n_an=int(_f(a.get("numberOfAnalystOpinions")) or 0), mentions=rd["mentions"] if rd else 0,
              r12=prozent(abs(r12), lang, True) if r12 is not None else "",
              div=prozent(_f(a.get("div_rendite")) or 0, lang, True),
-             dd=prozent(abs(a["_abstand_hoch"]), lang, True) if a.get("_abstand_hoch") is not None else "")
+             dd=prozent(abs(a["_abstand_hoch"]), lang, True) if a.get("_abstand_hoch") is not None else "",
+             wann=wann_text(a["_earnings"], lang) if a.get("_earnings") else "",
+             bewegung="")
+    mv = _f(a.get("_move_1d"))
+    if mv is not None:
+        if lang == "de":
+            w["bewegung"] = f"{'plus' if mv > 0 else 'minus'} {prozent(abs(mv), lang, True)}"
+        else:
+            w["bewegung"] = f"{'up' if mv > 0 else 'down'} {prozent(abs(mv), lang, True)}"
 
     # --- Hook
     if hat_ins:
@@ -514,17 +575,20 @@ def bauen(a, ins, rad, n_aktien, lang="de", monate=6, modus="liste", haelt=False
     # --- Dafür & dagegen
     pro, contra = pro_contra(a, ins, rad, lang)
     szenen.append({"name": "procontra", "text": _pick(t["pc"], seed, "pc").format(
-        pro=aufzaehlung([g for _, g in pro], lang), contra=aufzaehlung([g for _, g in contra], lang))})
+        pro=aufzaehlung([g for _, g in pro[:2]], lang), contra=aufzaehlung([g for _, g in contra[:2]], lang))})
 
     # --- Abschluss mit offener Frage (steht ganz am Ende -> mehr Kommentare)
     frage, frage_kurz = FRAGEN[lang][FRAGE_VON[key]]
-    cta = t["cta_insider"] if modus == "insider" else t["cta_liste"]
+    cta = (t["cta_insider"] if modus == "insider" else
+           t["cta_liste"].format(morgen=tag_nr + 1) if tag_nr else t["cta_liste_ohne"])
     szenen.append({"name": "outro", "text": _pick(t["outro"], seed, "outro").format(
         haelt=t["haelt"] if haelt else "", cta=cta, frage=frage.format(kn=kn))})
 
     for s in szenen:
         s["text"] = " ".join(s["text"].split())
     titel, tags = titel_tags(key, dict(a, _n_aktien=n_aktien, _mentions=rd["mentions"] if rd else 0), ins, lang)
+    if tag_nr:                                                     # Serien-Titel: "Tag 12: ..."
+        titel = [f"{'Tag' if lang == 'de' else 'Day'} {tag_nr}: {x}" for x in titel]
     return {"szenen": szenen, "hook": hook_bild(key, a, ins, rad, lang, n_aktien), "frage_kurz": frage_kurz,
             "pro": [s for s, _ in pro], "contra": [s for s, _ in contra], "winkel": key, "titel": titel, "tags": tags}
 
@@ -583,6 +647,9 @@ TITEL = {
                      "Zu schön, um wahr zu sein? {kn}"],
         "top": ["Platz {rang} von {n}: {kn} 🏆", "Die Nr. {rang} in meinem Aktien-Scanner", "Warum ist {kn} so stark?"],
         "score": ["{kn} im Daten-Check: {score}/100", "Lohnt sich {kn}? Die Zahlen", "{kn} kurz erklärt 📊"],
+        "earnings": ["{kn} Zahlen am {edat}: Das musst du wissen 📅", "Quartalszahlen bei {kn} – Daten-Check vorab",
+                     "Schlägt {kn} die Erwartungen?"],
+        "move": ["{kn}: {mv} an einem Tag 😳", "Was ist bei {kn} los?", "{mv} – Überreaktion bei {kn}?"],
     },
     "en": {
         "insider": ["{wer_kurz} are buying {kn} – {summe} 👀", "{kn} management is buying with their own money",
@@ -599,6 +666,9 @@ TITEL = {
         "dividend": ["{div} dividend: how safe is {kn}?", "Dividend check: {kn}", "Too good to be true? {kn}"],
         "top": ["Rank {rang} of {n}: {kn} 🏆", "The #{rang} stock in my scanner", "Why is {kn} so strong?"],
         "score": ["{kn} by the numbers: {score}/100", "Is {kn} worth it? The data", "{kn} explained 📊"],
+        "earnings": ["{kn} earnings on {edat}: what you need to know 📅", "{kn} earnings – data check before",
+                     "Will {kn} beat expectations?"],
+        "move": ["{kn}: {mv} in one day 😳", "What's going on with {kn}?", "{mv} – overreaction at {kn}?"],
     },
 }
 TAG_BRANCHE = {
@@ -615,11 +685,13 @@ TAG_WINKEL = {
     "de": {"insider": ["insider", "insiderkäufe"], "still": ["insider", "geheimtipp"], "dip": ["nachkaufen", "value"],
            "upside": ["kursziel", "analysten"], "hype": ["reddit", "wallstreetbets"], "momentum": ["aktientrend", "wachstum"],
            "dividend": ["dividende", "passiveseinkommen"], "top": ["aktienanalyse", "aktientipp"],
-           "score": ["aktienanalyse", "geldanlage"]},
+           "score": ["aktienanalyse", "geldanlage"], "earnings": ["quartalszahlen", "earnings"],
+           "move": ["aktiennews", "börsennews"]},
     "en": {"insider": ["insiderbuying", "smartmoney"], "still": ["insiderbuying", "hiddengem"],
            "dip": ["buythedip", "valueinvesting"], "upside": ["pricetarget", "analysts"], "hype": ["reddit", "wallstreetbets"],
            "momentum": ["momentum", "growthstocks"], "dividend": ["dividends", "passiveincome"],
-           "top": ["stockanalysis", "stockpicks"], "score": ["stockanalysis", "investing"]},
+           "top": ["stockanalysis", "stockpicks"], "score": ["stockanalysis", "investing"],
+           "earnings": ["earnings", "earningsseason"], "move": ["stocknews", "stockmarketnews"]},
 }
 
 
@@ -636,7 +708,9 @@ def titel_tags(key, a, ins, lang):
              n_an=int(_f(a.get("numberOfAnalystOpinions")) or 0), mentions=(a.get("_mentions") or 0),
              pot=prozent(pot, lang) if pot is not None else "", r12=prozent(r12, lang) if r12 is not None else "",
              dd=prozent(a["_abstand_hoch"], lang) if a.get("_abstand_hoch") is not None else "",
-             div=(zahl(div * 100, lang) + (" %" if de else "%")), summe="", wer_kurz="Insider" if de else "Insiders")
+             div=(zahl(div * 100, lang) + (" %" if de else "%")), summe="", wer_kurz="Insider" if de else "Insiders",
+             edat=datum(str(a["_earnings"])[:10], lang, kurz=True) if a.get("_earnings") else "",
+             mv=prozent(_f(a.get("_move_1d")) or 0, lang))
     if ins and ins.get("kaeufe"):
         w["summe"] = geld(ins["summe"], ins.get("waehrung", "USD"), lang)
         n = ins["anzahl_kaeufer"]
