@@ -1,0 +1,30 @@
+# ===== Aktien-Scanner Einstellungen =====
+
+universum:
+  dax: true              # die 40 größten deutschen Aktien
+  sp500: true            # die 500 größten US-Aktien
+  eigene_liste: []       # zusätzliche Aktien, z. B. [ASML.AS, NOVO-B.CO, MC.PA, NESN.SW]
+                         # Ticker wie bei Yahoo Finance: .DE = Xetra, .AS = Amsterdam, .PA = Paris
+
+# Gewichtung der 8 Kategorien. Ausgewogen = alle gleich (1).
+# Beispiele: mehr Sicherheit -> stabilitaet: 2, qualitaet: 2
+#            Dividende       -> dividende: 3, stabilitaet: 2, wachstum: 0.5
+#            Wachstum        -> wachstum: 3, momentum: 2, dividende: 0
+gewichte:
+  bewertung: 1           # günstig im Vergleich zur Branche (KGV, PEG, Cashflow-Rendite)
+  qualitaet: 1           # profitabel und solide finanziert (Rendite, Margen, Schulden)
+  wachstum: 1            # Umsatz- und Gewinnwachstum, erwartetes Wachstum
+  analysten: 1           # Kursziel-Potenzial und Empfehlungen der Analysten
+  momentum: 1            # Kursentwicklung der letzten 12 Monate
+  stabilitaet: 1         # geringe Schwankungen und Rückgänge
+  nachrichten: 1         # Stimmung der aktuellen Schlagzeilen
+  dividende: 1           # Höhe und Nachhaltigkeit der Dividende
+
+filter:
+  min_marktkapitalisierung_mrd: 5   # kleinere Firmen werden ausgelassen
+  abzug_pro_warnung: 3              # Punktabzug je Warnsignal
+  threads: 6                        # gleichzeitige Abrufe (bei Fehlern kleiner stellen, z. B. 3)
+
+bericht:
+  top: 30                           # so viele Aktien bekommen eine Detailkarte
+  nachrichten_pro_aktie: 5
