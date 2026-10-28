@@ -6,7 +6,7 @@ on:
   workflow_dispatch:          # per Knopf (GitHub oder App) startbar
     inputs:
       modus:
-        description: "normal = alles, demo = Testvideos, stimmen = Hörproben, themen = nur Bundesliga/Ernährung"
+        description: "normal = alles, demo = Testvideos, stimmen = Hörproben, themen = nur Bundesliga/Ernährung/Mindset"
         type: choice
         options: [normal, demo, stimmen, themen]
         default: normal
@@ -63,14 +63,18 @@ jobs:
         if: env.MODUS != 'themen'
         env:
           AKTIEN_THREADS: "3"
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
         run: |
           if [ "$MODUS" = "demo" ]; then python video_bot.py --demo
           elif [ "$MODUS" = "stimmen" ]; then python video_bot.py --stimmprobe
           elif [ -n "$TICKER" ]; then python video_bot.py --ticker "$TICKER"
           else python video_bot.py; fi
         continue-on-error: true    # falls ein Video scheitert, wird der Bericht trotzdem veröffentlicht
-      - name: Themen-Videos erstellen (Bundesliga, Ernährung)
+      - name: Themen-Videos erstellen (Bundesliga, Ernährung, Mindset)
         if: env.MODUS == 'normal' || env.MODUS == 'themen' || env.MODUS == 'demo'
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           if [ "$MODUS" = "demo" ]; then python themen_bot.py --demo; else python themen_bot.py; fi
         continue-on-error: true
