@@ -6,9 +6,9 @@ on:
   workflow_dispatch:          # per Knopf (GitHub oder App) startbar
     inputs:
       modus:
-        description: "normal = Scan + Videos, demo = nur schnelles Testvideo"
+        description: "normal = Scan + Videos, demo = Testvideo, stimmen = Hörproben aller Stimmen"
         type: choice
-        options: [normal, demo]
+        options: [normal, demo, stimmen]
         default: normal
       ticker:
         description: "Optional: Video für diese Aktie (z. B. NVDA oder SAP.DE)"
@@ -51,7 +51,7 @@ jobs:
           key: speicher-${{ github.run_id }}
           restore-keys: speicher-
       - name: Aktien bewerten
-        if: env.MODUS != 'demo'
+        if: env.MODUS == 'normal'
         env:
           AKTIEN_THREADS: "3"
         run: |
@@ -64,6 +64,7 @@ jobs:
           AKTIEN_THREADS: "3"
         run: |
           if [ "$MODUS" = "demo" ]; then python video_bot.py --demo
+          elif [ "$MODUS" = "stimmen" ]; then python video_bot.py --stimmprobe
           elif [ -n "$TICKER" ]; then python video_bot.py --ticker "$TICKER"
           else python video_bot.py; fi
         continue-on-error: true    # falls ein Video scheitert, wird der Bericht trotzdem veröffentlicht
