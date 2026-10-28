@@ -38,6 +38,7 @@ DEFAULT_VIDEO = {
     "min_kaufsumme": 100_000, "gewicht_scanner": 0.4, "gewicht_insider": 0.6, "gewicht_stimmung": 0.1,
     "sperre_tage": 14, "archiv_tage": 10, "eigene_positionen": [],
     "ziel_sekunden": 68, "serie": True, "aktuell_bevorzugen": True,
+    "anbieter": "edge", "eleven_stimmen": {"de": "brian", "en": "brian"},
 }
 
 
@@ -132,7 +133,8 @@ def erstellen(a, ins, rad, D0, vcfg, n_aktien, demo=False, tag_nr=None):
             print(f"    ({s['name']}) {s['text']}")
         name = f"{date.today():%Y-%m-%d}_{tk}_{lang}"
         mp4, jpg, txt = (os.path.join("videos", name + e) for e in (".mp4", ".jpg", ".txt"))
-        lcfg = dict(vcfg, stimme=(vcfg.get("stimmen") or {}).get(lang))
+        lcfg = dict(vcfg, stimme=(vcfg.get("stimmen") or {}).get(lang),
+                    eleven_stimme=(vcfg.get("eleven_stimmen") or {}).get(lang) or "brian")
         dauer, ton = video.render(D, sk["szenen"], lcfg, mp4)
         video.vorschaubild(D, jpg)
         text = skript.beschreibung(a, ins, lang, sk["frage_kurz"], sk["titel"][0], sk["tags"])

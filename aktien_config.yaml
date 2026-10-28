@@ -52,6 +52,10 @@ video:
   chart_monate: 6
   musik: musik.mp3          # optional: lizenzfreie Musik als musik.mp3 hochladen, sonst ohne Musik
   musik_lautstaerke: 0.12
+  anbieter: edge            # Stimme: edge (kostenlos) oder elevenlabs (Abo, braucht Secret ELEVENLABS_API_KEY)
+  eleven_stimmen:           # ElevenLabs-Stimme je Sprache: Name (brian, bill, daniel, george, callum, liam, sarah,
+    de: brian               # alice) oder eine Voice-ID aus deiner ElevenLabs-Stimmenbibliothek
+    en: brian
   eigene_positionen: []     # Aktien, die du selbst besitzt, z. B. [AAPL, SAP.DE] -> Offenlegung im Video
 
   # nur Listen-Modus
@@ -87,3 +91,18 @@ themen:
     serie: true
     stimme: de-DE-FlorianMultilingualNeural   # z. B. de-DE-SeraphinaMultilingualNeural (weiblich)
     tempo: "+5%"
+  mindset:
+    aktiv: true             # Geld-Mindset: ruhige Erklärvideos, KI-Texte (Secret ANTHROPIC_API_KEY), DE + EN
+    serie: true
+    sprachen: [de, en]
+    anbieter: elevenlabs    # elevenlabs (Abo) oder edge (kostenlos)
+    eleven_stimme:
+      de: brian             # tiefe Erzählerstimme; eigene deutsche Stimme: Voice-ID hier eintragen
+      en: brian
+    eleven_tempo: 0.95      # 0.7 bis 1.2 (etwas ruhiger wirkt hochwertiger)
+    eleven_einstellungen:
+      stability: 0.45       # niedriger = lebendiger, höher = gleichmäßiger
+      style: 0.3            # mehr Ausdruck
+    stimme:                 # Ersatz-Stimme (kostenlos), falls ElevenLabs nicht geht
+      de: de-DE-FlorianMultilingualNeural
+      en: en-US-AndrewMultilingualNeural

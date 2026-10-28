@@ -166,9 +166,59 @@ def _wav_samples(path, sr):
     return np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768
 
 
+def _pct(t, default=0):
+    try:
+        return int(str(t).replace("%", "").strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def sprechen_eleven(szenen, vcfg, lang, tmp, sr):
+    """ElevenLabs für alle Szenen. Gibt True zurück, wenn alles geklappt hat (sonst Rückfall auf Gratis-Stimme)."""
+    import tts_elevenlabs as el
+    if not el.schluessel():
+        print("  ElevenLabs: kein Schlüssel (GitHub-Secret ELEVENLABS_API_KEY) -> kostenlose Stimme.")
+        return False
+    bedarf = sum(len(s["text"]) for s in szenen)
+    rest = el.restguthaben()
+    if rest is not None and rest < bedarf:
+        print(f"  ElevenLabs: Guthaben reicht nicht ({rest} Zeichen übrig, {bedarf} nötig) -> kostenlose Stimme.")
+        return False
+    tempo = float(vcfg.get("eleven_tempo", 1.0)) + (_pct(vcfg.get("tempo")) - _pct(vcfg.get("tempo_grund"),
+                                                                                    _pct(vcfg.get("tempo")))) / 100
+    try:
+        ergebnisse = []
+        for i, s in enumerate(szenen):
+            mp3 = os.path.join(tmp, f"el_{lang}{i}.mp3")
+            woerter = el.sprechen(s["text"], vcfg.get("eleven_stimme") or "brian", mp3,
+                                  modell=vcfg.get("eleven_modell", "eleven_multilingual_v2"), tempo=tempo,
+                                  einstellungen=vcfg.get("eleven_einstellungen"),
+                                  vorher=szenen[i - 1]["text"] if i else None,
+                                  nachher=szenen[i + 1]["text"] if i + 1 < len(szenen) else None)
+            a = _wav_samples(mp3, sr)
+            if len(a) < sr * 0.3:
+                raise RuntimeError("leere Audiodatei")
+            dur = len(a) / sr
+            if not woerter:
+                ws = s["text"].split()
+                woerter = [(k * dur / len(ws), (k + 1) * dur / len(ws), w) for k, w in enumerate(ws)]
+            ergebnisse.append((a, dur, woerter))
+        for s, (a, dur, woerter) in zip(szenen, ergebnisse):
+            s.update(audio=a, sprech_dauer=dur, woerter=woerter)
+        print(f"  [{lang}] ElevenLabs-Stimme ({bedarf} Zeichen)")
+        return True
+    except Exception as e:
+        print(f"  ElevenLabs nicht verfügbar ({str(e)[:120]}) -> kostenlose Stimme.")
+        return False
+
+
 def sprechen(szenen, vcfg, lang, tmp, sr=24000):
     """Fügt jeder Szene 'audio' (numpy), 'sprech_dauer' und 'woerter' [(start, ende, wort)] hinzu.
     Gibt zurück, ob die Stimme funktioniert hat."""
+    if vcfg.get("anbieter") == "elevenlabs" and not vcfg.get("_eleven_aus"):
+        if sprechen_eleven(szenen, vcfg, lang, tmp, sr):
+            return True
+        vcfg["_eleven_aus"] = True                                  # für diesen Lauf nicht nochmal versuchen
     stimmen = [vcfg.get("stimme")] + (ERSATZ_STIMMEN.get(lang, []) if vcfg.get("ersatz", True) else [])
     stimmen = [s for i, s in enumerate(stimmen) if s and s not in stimmen[:i]]
     rate = vcfg.get("tempo", "+5%")
@@ -624,11 +674,11 @@ class Szenen:
 
 # ---------------------------------------------------------------- Untertitel & Rahmen
 
-def untertitel(d, woerter, t_sprech):
-    """Karaoke-Untertitel: 2-3 Wörter, das gerade gesprochene Wort ist gelb."""
+def untertitel(d, woerter, t_sprech, stil=None):
+    """Karaoke-Untertitel: 2-3 Wörter, das gerade gesprochene Wort ist gelb (ruhig: kleiner, gold)."""
     if not woerter or t_sprech < -0.1 or t_sprech > woerter[-1][1] + 0.35:
         return
-    f = font(80, "black")
+    f = font(64, "bold") if stil == "ruhig" else font(80, "black")
     gruppen, cur, w_cur = [], [], 0
     for i, (s, e, w) in enumerate(woerter):
         ww = tw(d, w + " ", f)
@@ -648,12 +698,30 @@ def untertitel(d, woerter, t_sprech):
     total = sum(tw(d, w + " ", f) for w in text) - tw(d, " ", f)
     x, y = (W - total) / 2, 1300
     for i, w in zip(g, text):
-        d.text((x, y), w, font=f, fill=C["gold"] if i == aktiv else C["ink"], stroke_width=8, stroke_fill=(0, 0, 0))
+        if stil == "ruhig":
+            d.text((x, y), w, font=f, fill=(233, 190, 96) if i == aktiv else (244, 240, 230), stroke_width=5,
+                   stroke_fill=(0, 0, 0))
+        else:
+            d.text((x, y), w, font=f, fill=C["gold"] if i == aktiv else C["ink"], stroke_width=8, stroke_fill=(0, 0, 0))
         x += tw(d, w + " ", f)
 
 
 def rahmen(d, t, total, D):
     lang = D["lang"]
+    if D.get("rahmen_stil") == "minimal":                          # ruhiger Look: nur feine Linie, Marke, Hinweis
+        d.line([(M, 210), (M + (W - 2 * M) * min(1, t / total), 210)], fill=(233, 190, 96), width=3)
+        f = font(26, "medium")
+        marke = D.get("brand", "")
+        x = M
+        for c in marke:
+            d.text((x, 236), c, font=f, fill=(150, 146, 138))
+            x += tw(d, c, f) + 5
+        if D.get("tag_nr"):
+            tt = f"{'TAG' if lang == 'de' else 'DAY'} {D['tag_nr']}"
+            d.text((W - M - tw(d, tt, f), 236), tt, font=f, fill=(150, 146, 138))
+        txt = D.get("disclaimer", "")
+        center(d, txt, 1470, passend(d, txt, "medium", 24, W - 2 * M, 18), (110, 108, 102))
+        return
     d.rounded_rectangle([M, 206, W - M, 214], radius=4, fill=(30, 36, 45))
     d.rounded_rectangle([M, 206, M + (W - 2 * M) * min(1, t / total), 214], radius=4, fill=C["green"])
     x = pill(d, M, 238, D.get("brand") or L(lang, "brand_insider" if D.get("modus") == "insider" else "brand"), font(28, "black"),
@@ -690,9 +758,10 @@ def render(D, szenen, vcfg, out_path):
             neu = basis + min(15, int(round((total / ziel - 1) * 100)))
         elif ton_ok and roh < min_sek - 1.5:                        # zu kurz -> etwas ruhiger statt Stille (max. -12 %)
             neu = basis - min(12, int(math.ceil((min_sek / roh - 1) * 100)))
-        if neu is not None and neu != basis:
+        eleven_aktiv = vcfg.get("anbieter") == "elevenlabs" and not vcfg.get("_eleven_aus")
+        if neu is not None and neu != basis and not eleven_aktiv:   # bei ElevenLabs nicht neu sprechen (kostet Guthaben)
             print(f"  [{D['lang']}] {roh:.0f} s Sprechzeit -> Tempo {neu:+d}%")
-            ton_ok = sprechen(szenen, dict(vcfg, tempo=f"{neu:+d}%"), D["lang"], tmp, sr)
+            ton_ok = sprechen(szenen, dict(vcfg, tempo=f"{neu:+d}%", tempo_grund=f"{basis:+d}%"), D["lang"], tmp, sr)
             total = zeitplan(szenen, min_sek)
         print(f"  [{D['lang']}] Länge: {total:.1f} s")
         audio = np.zeros(int(total * sr) + sr, dtype=np.float32)
@@ -719,7 +788,7 @@ def render(D, szenen, vcfg, out_path):
                 "-c:a", "aac", "-b:a", "160k", "-t", f"{total:.3f}", "-movflags", "+faststart", out_path]
         proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
 
-        bg = background().convert("RGBA")
+        bg = (D.get("hintergrund") or background)().convert("RGBA")
         sz = D.get("szenen_obj") or Szenen(D)                      # Themen bringen ihre eigenen Szenen mit
         n_frames = int(math.ceil(total * FPS))
         si = 0
@@ -747,7 +816,7 @@ def render(D, szenen, vcfg, out_path):
                 img.alpha_composite(layer)
             d = ImageDraw.Draw(img)
             rahmen(d, t, total, D)
-            untertitel(d, s["woerter"], tl - s["lead"])
+            untertitel(d, s["woerter"], tl - s["lead"], D.get("untertitel_stil"))
             proc.stdin.write(img.convert("RGB").tobytes())
         proc.stdin.close()
         if proc.wait() != 0:
@@ -757,7 +826,7 @@ def render(D, szenen, vcfg, out_path):
 
 def vorschaubild(D, out_png):
     """Titelbild (Hook-Szene, fertig aufgebaut) für die Vorschau in der App."""
-    img = background().convert("RGBA")
+    img = (D.get("hintergrund") or background)().convert("RGBA")
     layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     if D.get("szenen_obj"):
         obj = D["szenen_obj"]

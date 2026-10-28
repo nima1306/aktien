@@ -132,6 +132,7 @@ a.link{color:var(--green)}
     <button data-t="aktien">📈 Aktien</button>
     <button data-t="bundesliga">⚽ Bundesliga</button>
     <button data-t="ernaehrung">🥗 Ernährung</button>
+    <button data-t="mindset">🧠 Mindset</button>
   </div>
   <div class="tabs" id="tabs">
     <button data-f="alle" class="on">Alle</button>
@@ -207,7 +208,7 @@ function karte(x) {
   return `<article class="card ${p ? "posted" : ""}" data-id="${esc(x.id)}">
     <div class="thumb" style="background-image:url('videos/${esc(x.bild)}')" data-act="play">
       <div class="badges"><span class="badge lang">${x.sprache === "de" ? "DE" : "EN"}</span>
-        ${x.thema ? `<span class="badge">${x.thema === "bundesliga" ? "⚽" : x.thema === "ernaehrung" ? "🥗" : esc(x.thema)}</span>` : ""}
+        ${x.thema ? `<span class="badge">${x.thema === "bundesliga" ? "⚽" : x.thema === "ernaehrung" ? "🥗" : x.thema === "mindset" ? "🧠" : esc(x.thema)}</span>` : ""}
         ${x.demo ? '<span class="badge demo">DEMO</span>' : ""}
         ${x.ton === false ? '<span class="badge warn">ohne Ton</span>' : ""}
         ${p ? '<span class="badge ok">gepostet</span>' : ""}</div>

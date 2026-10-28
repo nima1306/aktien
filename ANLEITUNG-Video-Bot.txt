@@ -139,3 +139,48 @@ Für jedes Thema ein eigenes TikTok-Konto anlegen (wie bei den Aktien-Konten), z
                 Bio: "Jeden Tag die Bundesliga in Zahlen ⚽ Ergebnisse · Tabelle · Tipps"
  - Ernährung:   Name "Food-Check 🥗", Benutzername z. B. foodcheck.daily
                 Bio: "Was steckt wirklich drin? 🥗 Täglicher Produkt-Check | Keine Ernährungsberatung"
+
+
+GELD-MINDSET (Deutsch + Englisch) MIT ELEVENLABS-STIMME UND KI-TEXTEN
+=====================================================================
+Ruhige Erklärvideos mit einer überraschenden These (z. B. Zinseszins, Lifestyle-Inflation, 72er-Regel),
+schwarzer Hintergrund, leuchtende Linien-Grafiken in Weiß und Gold, tiefe Erzählerstimme.
+Jeden Tag schreibt die KI (Claude) ein neues Skript - auf Deutsch und Englisch, mit gleichen Bildern.
+Ohne Schlüssel funktioniert alles trotzdem: dann kostenlose Stimme und 3 fertige Beispiel-Skripte.
+
+SCHLÜSSEL 1 - ElevenLabs (Stimme, ca. 22 $/Monat im Creator-Abo)
+ 1. elevenlabs.io -> Konto anlegen -> Abo "Creator" wählen (Starter reicht nur knapp).
+ 2. Links unten Profil -> "API Keys" -> "Create API Key" -> Namen eingeben -> Schlüssel kopieren.
+    (Falls nach Rechten gefragt wird: "Text to Speech" und "User: Read" erlauben.)
+ 3. GitHub -> dein Projekt -> "Settings" -> links "Secrets and variables" -> "Actions"
+    -> "New repository secret" -> Name: ELEVENLABS_API_KEY -> Wert: Schlüssel einfügen -> "Add secret".
+
+SCHLÜSSEL 2 - Anthropic / Claude (Texte, ca. 1 $/Monat)
+ 1. console.anthropic.com -> Konto anlegen -> "Billing": 5 $ Guthaben aufladen (reicht für Monate).
+ 2. "API Keys" -> "Create Key" -> kopieren.
+ 3. GitHub -> Settings -> Secrets and variables -> Actions -> New repository secret
+    -> Name: ANTHROPIC_API_KEY -> Wert einfügen -> "Add secret".
+
+Die Schlüssel sind in GitHub verschlüsselt gespeichert und tauchen nirgends im Log auf.
+
+STIMME AUSSUCHEN (aktien_config.yaml -> themen: -> mindset: -> eleven_stimme)
+ - Standard: brian (tief, ruhig). Weitere: bill, daniel, george, callum, liam, sarah, alice.
+ - Eigene Stimme, z. B. ein deutscher Muttersprachler: auf elevenlabs.io unter "Voices" -> "Voice Library"
+   nach "German narrator" suchen -> "Add to my voices" -> beim Stimmen-Namen "ID kopieren"
+   -> die ID hinter de: eintragen.
+ - eleven_tempo 0.95 = etwas ruhiger. stability niedriger = lebendiger. style höher = mehr Ausdruck.
+
+ELEVENLABS AUCH FÜR ANDERE THEMEN
+ - Aktien: aktien_config.yaml -> video: -> anbieter: elevenlabs
+ - Bundesliga / Ernährung: unter themen: -> bundesliga: bzw. ernaehrung: -> anbieter: elevenlabs
+   und eleven_stimme: <name oder ID>
+ - Achtung Kosten: Jedes Thema braucht ca. 1.000 Zeichen pro Video und Sprache. Creator-Abo
+   (121.000 Zeichen) reicht für ca. 5 Videos pro Werktag. Wird das Guthaben knapp, nimmt der Bot
+   automatisch die kostenlose Stimme - es fällt kein Video aus.
+
+TIKTOK-KONTEN
+ - Deutsch:  Name "Geld Mindset", z. B. @geld.mindset.daily
+             Bio: "Eine Idee über Geld, jeden Tag. ⏳ Keine Finanzberatung."
+ - Englisch: Name "Money Mindset", z. B. @moneymindset.daily
+             Bio: "One idea about money, every day. ⏳ Not financial advice."
+ Profilbilder: profilbild-mindset-de.png / profilbild-mindset-en.png
