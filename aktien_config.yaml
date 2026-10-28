@@ -74,3 +74,12 @@ stimmung:
   reddit: true              # Reddit-Erwähnungen über ApeWisdom (US-Aktien)
   stocktwits: true          # Bullish/Bearish-Anteil auf StockTwits (US-Aktien)
   bafin: true               # Insiderkäufe deutscher Aktien aus der BaFin-Datenbank
+
+# ===== Weitere Themen (nur Deutsch, eigene TikTok-Konten) =====
+themen:
+  bundesliga:
+    aktiv: true             # Spieltag-Rückblick, Vorschau mit Topspiel, Torjäger, Meister- und Abstiegskampf
+    serie: true
+  ernaehrung:
+    aktiv: true             # Zucker- und Protein-Checks beliebter Produkte (Open Food Facts)
+    serie: true

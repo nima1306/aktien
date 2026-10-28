@@ -209,9 +209,11 @@ def zeitplan(szenen, min_sek, lead=0.08, tail=0.28):
     total = sum(s["dauer"] for s in szenen)
     if total < min_sek:                                               # auf Mindestlänge strecken
         extra = min_sek - total
-        anteile = {"chart": 0.4, "procontra": 0.25, "outro": 0.35}
+        anteile = {"chart": 0.4, "procontra": 0.25, "outro": 0.35, "liste": 0.4, "ergebnisse": 0.4,
+                   "tabelle": 0.25, "info": 0.25, "fakten": 0.2, "frage": 0.35}
+        summe = sum(anteile.get(s["name"], 0) for s in szenen) or 1
         for s in szenen:
-            s["dauer"] += extra * anteile.get(s["name"], 0)
+            s["dauer"] += extra * anteile.get(s["name"], 0) / summe
     t = 0.0
     for s in szenen:
         s["start"], s["lead"] = t, lead
@@ -652,14 +654,14 @@ def rahmen(d, t, total, D):
     lang = D["lang"]
     d.rounded_rectangle([M, 206, W - M, 214], radius=4, fill=(30, 36, 45))
     d.rounded_rectangle([M, 206, M + (W - 2 * M) * min(1, t / total), 214], radius=4, fill=C["green"])
-    x = pill(d, M, 238, L(lang, "brand_insider" if D.get("modus") == "insider" else "brand"), font(28, "black"),
+    x = pill(d, M, 238, D.get("brand") or L(lang, "brand_insider" if D.get("modus") == "insider" else "brand"), font(28, "black"),
              C["green"], C["bg"], (18, 9))
     if D.get("tag_nr"):
         pill(d, x + 12, 238, f"{'TAG' if lang == 'de' else 'DAY'} {D['tag_nr']}", font(28, "black"), C["ink"], C["bg"],
              (18, 9))
     dt, txt_d = font(28, "bold"), heute(lang)
     d.text((W - M - tw(d, txt_d, dt), 246), txt_d, font=dt, fill=C["muted"])
-    txt = f"{L(lang, 'disclaimer')} · {L(lang, 'daten')}: {D['quellen']}"
+    txt = f"{D.get('disclaimer') or L(lang, 'disclaimer')} · {L(lang, 'daten')}: {D['quellen']}"
     if D.get("haelt"):
         txt = f"{L(lang, 'haelt')} · " + txt
     center(d, txt, 1470, passend(d, txt, "medium", 26, W - 2 * M, 18), C["muted"])
@@ -711,7 +713,7 @@ def render(D, szenen, vcfg, out_path):
         proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
 
         bg = background().convert("RGBA")
-        sz = Szenen(D)
+        sz = D.get("szenen_obj") or Szenen(D)                      # Themen bringen ihre eigenen Szenen mit
         n_frames = int(math.ceil(total * FPS))
         si = 0
         for fi in range(n_frames):
@@ -724,7 +726,8 @@ def render(D, szenen, vcfg, out_path):
             layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
             ld = ImageDraw.Draw(layer)
             fn = getattr(sz, s["name"])
-            if s["name"] in ("chart", "scanner"):
+            sz.aktuell = s
+            if s["name"] in ("chart", "scanner") or getattr(sz, "mit_img", False):
                 fn(ld, tl, s["dauer"], img=layer)
             else:
                 fn(ld, tl, s["dauer"])
@@ -749,7 +752,12 @@ def vorschaubild(D, out_png):
     """Titelbild (Hook-Szene, fertig aufgebaut) für die Vorschau in der App."""
     img = background().convert("RGBA")
     layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    Szenen(D).hook(ImageDraw.Draw(layer), 3.0, 5.0)
+    if D.get("szenen_obj"):
+        obj = D["szenen_obj"]
+        obj.aktuell = D["vorschau_szene"]
+        getattr(obj, D["vorschau_szene"]["name"])(ImageDraw.Draw(layer), 3.0, 5.0, img=layer)
+    else:
+        Szenen(D).hook(ImageDraw.Draw(layer), 3.0, 5.0)
     img.alpha_composite(layer)
     rahmen(ImageDraw.Draw(img), 0, 1, D)
     img.convert("RGB").resize((540, 960), Image.LANCZOS).save(out_png, quality=85)

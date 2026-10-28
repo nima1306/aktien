@@ -112,3 +112,30 @@ WENN ETWAS NICHT KLAPPT
  - Kein Video: Actions -> letzten Lauf öffnen -> Schritt "Videos erstellen" ansehen.
  - "ohne Ton": im Log nach "Stimme nicht verfügbar" suchen. Meist hilft ein neuer Lauf.
  - App leer: erst einen Lauf abwarten. Danach in der App nach unten ziehen bzw. neu öffnen.
+
+
+WEITERE THEMEN: BUNDESLIGA UND ERNÄHRUNG (nur Deutsch)
+======================================================
+Jeden Werktag entsteht zusätzlich je ein Video pro Thema (in der App oben filterbar: ⚽ / 🥗).
+
+Bundesliga (Daten: OpenLigaDB, kostenlos)
+ - Nach einem Spieltag: Rückblick mit allen Ergebnissen, Überraschung, Tabelle, Zahlen.
+ - Vor einem Spieltag: Vorschau mit Topspiel, Formcheck und Tabelle ("Dein Tipp?").
+ - Dazwischen im Wechsel: Torjäger-Check, Meisterrennen, Abstiegskampf.
+ - Keine Vereinslogos oder Spielerfotos (geschützt) - alles selbst gezeichnet.
+
+Ernährung (Daten: Open Food Facts, kostenlos)
+ - Jeden Tag eine andere Kategorie: Softdrinks, Frühstücksflocken, Energy Drinks, Müsliriegel,
+   Proteinriegel, Fruchtsäfte, Joghurts, Eistees, Nuss-Nougat-Cremes, Kakao-Drinks.
+ - Verglichen werden die in Deutschland am häufigsten gescannten Produkte (Herstellerangaben).
+ - Nur Fakten, keine Diät-Tipps. "Keine Ernährungsberatung" steht in jedem Video.
+
+Einschalten / ausschalten: aktien_config.yaml -> themen: -> aktiv: true/false
+Nur die Themen testen: Actions -> Run workflow -> modus "themen" (ca. 6 Minuten)
+oder in der App der Knopf "Nur Themen-Videos".
+
+Für jedes Thema ein eigenes TikTok-Konto anlegen (wie bei den Aktien-Konten), z. B.
+ - Bundesliga:  Name "Bundesliga-Check ⚽", Benutzername z. B. bundesliga.check.daily
+                Bio: "Jeden Tag die Bundesliga in Zahlen ⚽ Ergebnisse · Tabelle · Tipps"
+ - Ernährung:   Name "Food-Check 🥗", Benutzername z. B. foodcheck.daily
+                Bio: "Was steckt wirklich drin? 🥗 Täglicher Produkt-Check | Keine Ernährungsberatung"
