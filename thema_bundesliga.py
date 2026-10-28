@@ -262,7 +262,19 @@ def rueckblick(D, st, tag_nr):
             "frage": frage[1], "name": f"Spieltag {st} · Rückblick"}
 
 
-def vorschau(D, st, tag_nr):
+def tagwort(t, heute=None):
+    """'heute', 'morgen' oder 'am Samstag'."""
+    heute = heute or date.today()
+    if t.date() == heute:
+        return "heute"
+    if t.date() == heute + timedelta(days=1):
+        return "morgen"
+    return f"am {WOCHENTAG_LANG[t.weekday()]}"
+
+
+def vorschau(D, st, tag_nr, live=False, heute=None):
+    """Vorschau auf den Spieltag. live=True: am Spieltag selbst (Wochenende), mit schon gespielten Ergebnissen."""
+    heute = heute or date.today()
     spiele = sorted([m for m in D["spiele"] if spieltag(m) == st], key=lambda m: anstoss(m) or datetime.max)
     tz = tabelle_zeilen(D["tabelle"])
     platz = {z["team"]: z["platz"] for z in tz}
@@ -285,12 +297,33 @@ def vorschau(D, st, tag_nr):
     fb, pb = form(D["spiele"], b)
     erstes = next((z for z, m in zip(zeilen, spiele) if z["tore_h"] is None), zeilen[0])
     an0 = anstoss(spiele[zeilen.index(erstes)])
-    wann0 = WOCHENTAG_LANG[an0.weekday()] if an0 else "bald"
-    hook = (f"Spieltag {st} steht vor der Tür. Und das Topspiel hat es in sich: {a} gegen {b}. Platz "
-            f"{platz.get(a)} gegen Platz {platz.get(b)}. Hier ist alles, was du vorher wissen musst.")
-    uhr = lambda t: f"{t:%H} Uhr {int(t.minute)}" if t.minute else f"{t:%H} Uhr"
-    paar = (f"Los geht es am {wann0} mit {erstes['heim']} gegen {erstes['gast']}. "
-            f"Das Topspiel steigt am {WOCHENTAG_LANG[an.weekday()]} um {uhr(an)}. " if an else "")
+    uhr = lambda t: f"{int(t.hour)} Uhr {int(t.minute)}" if t.minute else f"{int(t.hour)} Uhr"
+    gespielt = [z for z in zeilen if z["tore_h"] is not None]
+    tore = sum(z["tore_h"] + z["tore_g"] for z in gespielt)
+    if live and gespielt:
+        hook = (f"Spieltag {st} läuft! {len(gespielt)} {'Spiel ist' if len(gespielt) == 1 else 'Spiele sind'} schon "
+                f"vorbei, mit {tore} {'Tor' if tore == 1 else 'Toren'}. Und {tagwort(an, heute) if an else 'gleich'} "
+                f"kommt das Topspiel: {a} gegen {b}. Hier ist der Zwischenstand.")
+    elif live:
+        hook = (f"Heute ist Bundesliga-Tag! Das Topspiel: {a} gegen {b}"
+                + (f", {tagwort(an, heute)} um {uhr(an)}" if an else "") + f". Platz {platz.get(a)} gegen Platz "
+                f"{platz.get(b)}. Hier ist alles, was du wissen musst.")
+    else:
+        hook = (f"Spieltag {st} steht vor der Tür. Und das Topspiel hat es in sich: {a} gegen {b}. Platz "
+                f"{platz.get(a)} gegen Platz {platz.get(b)}. Hier ist alles, was du vorher wissen musst.")
+    if live and gespielt:
+        def satz(z):
+            x, y = z["tore_h"], z["tore_g"]
+            if x == y:
+                return f"{z['heim']} und {z['gast']} trennen sich {x} zu {y}."
+            w, l, p, q = (z["heim"], z["gast"], x, y) if x > y else (z["gast"], z["heim"], y, x)
+            return f"{w} gewinnt {p} zu {q} gegen {l}."
+        paar = "Schon gespielt: " + " ".join(satz(z) for z in gespielt[-2:]) + " "
+        if an:
+            paar += f"Das Topspiel steigt {tagwort(an, heute)} um {uhr(an)}. "
+    else:
+        paar = (f"Los geht es {tagwort(an0, heute)} um {uhr(an0)} mit {erstes['heim']} gegen {erstes['gast']}. "
+                f"Das Topspiel steigt {tagwort(an, heute)} um {uhr(an)}. " if an and an0 else "")
     weitere = [z for z in zeilen if z["tore_h"] is None and not z.get("markiert") and z is not erstes][:2]
     if weitere:
         paar += "Außerdem spannend: " + " und ".join(f"{z['heim']} gegen {z['gast']}" for z in weitere) + "."
@@ -301,10 +334,12 @@ def vorschau(D, st, tag_nr):
             anzahl_tag[t_.weekday()] = anzahl_tag.get(t_.weekday(), 0) + 1
     if anzahl_tag:
         haupt = max(anzahl_tag, key=anzahl_tag.get)
-        paar += f" Insgesamt {len(spiele)} Spiele, die meisten davon am {WOCHENTAG_LANG[haupt]}."
+        if not live:
+            paar += f" Insgesamt {len(spiele)} Spiele, die meisten davon am {WOCHENTAG_LANG[haupt]}."
     frage = ("Dein Tipp fürs Topspiel? Schreib dein Ergebnis in die Kommentare.", "Dein Tipp fürs Topspiel?")
     szenen = [
-        {"name": "titel", "text": hook, "daten": {"tag": f"Spieltag {st}", "name": "Vorschau", "kicker": "TOPSPIEL",
+        {"name": "titel", "text": hook, "daten": {"tag": f"Spieltag {st}", "name": "Heute" if live else "Vorschau",
+         "kicker": ("ZWISCHENSTAND" if gespielt else "HEUTE") if live else "TOPSPIEL",
          "gross": f"{a} – {b}", "sub": f"{WOCHENTAG[an.weekday()]} {an:%d.%m.} · {an:%H:%M} Uhr" if an else "",
          "sub2": f"Platz {platz.get(a)} gegen Platz {platz.get(b)}", "farbe": "green"}},
         {"name": "ergebnisse", "text": paar,
@@ -320,12 +355,19 @@ def vorschau(D, st, tag_nr):
         {"name": "tabelle", "text": (f"Ein Blick auf die Tabelle. {tz[0]['team']} führt mit {tz[0]['pkt']} Punkten, "
                                      f"vor {tz[1]['team']} mit {tz[1]['pkt']}. Unten zittern {tz[-2]['team']} und "
                                      f"{tz[-1]['team']}."),
-         "daten": tabelle_szene(tz, "Tabelle", f"vor dem {st}. Spieltag")},
+         "daten": tabelle_szene(tz, "Tabelle", "aktuell" if live and gespielt else f"vor dem {st}. Spieltag")},
         {"name": "frage", "text": _outro_text(frage[0], tag_nr), "daten": _frage_szene(frage[1], tag_nr)},
     ]
-    titel = [f"Spieltag {st}: Dein Tipp fürs Topspiel? ⚽", f"Topspiel: {a} gegen {b}",
-             f"Bundesliga Vorschau Spieltag {st}"]
+    if live:
+        titel = [f"Heute: {a} gegen {b}. Dein Tipp? ⚽", f"Spieltag {st} live: Wer gewinnt das Topspiel?",
+                 f"Bundesliga heute: {a} – {b}"]
+    else:
+        titel = [f"Spieltag {st}: Dein Tipp fürs Topspiel? ⚽", f"Topspiel: {a} gegen {b}",
+                 f"Bundesliga Vorschau Spieltag {st}"]
     tags = ["bundesliga", "fußball", "topspiel", _tag(a), _tag(b), "tippspiel", "fussball", "fyp"]
+    if live:
+        return {"id": f"live-{D['saison']}-{st}-{heute.isoformat()}", "szenen": szenen, "titel": titel,
+                "tags": tags, "frage": frage[1], "name": f"Spieltag {st} · Heute"}
     return {"id": f"vorschau-{D['saison']}-{st}", "szenen": szenen, "titel": titel, "tags": tags, "frage": frage[1],
             "name": f"Spieltag {st} · Vorschau"}
 
@@ -438,6 +480,14 @@ def video_plan(D, erledigt, tag_nr, jetzt=None):
     fertige = [st for st, ms in tage.items() if st and all(fertig(m) for m in ms)]
     offene = sorted(st for st, ms in tage.items() if st and not all(fertig(m) for m in ms))
     letzter = max(fertige) if fertige else None
+    if jetzt.weekday() >= 5:                      # Wochenende: Spieltag heute -> Vorschau/Zwischenstand
+        for st_ in offene:
+            if any(not fertig(m) and anstoss(m) and anstoss(m).date() == jetzt.date() for m in tage[st_]):
+                if f"live-{D['saison']}-{st_}-{jetzt.date().isoformat()}" not in erledigt:
+                    v = vorschau(D, st_, tag_nr, live=True, heute=jetzt.date())
+                    if v:
+                        return v
+                break
     if letzter:
         ende = max(anstoss(m) or datetime.min for m in tage[letzter])
         if (jetzt - ende) <= timedelta(days=3) and f"rueckblick-{D['saison']}-{letzter}" not in erledigt:

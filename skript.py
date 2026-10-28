@@ -581,6 +581,9 @@ def bauen(a, ins, rad, n_aktien, lang="de", monate=6, modus="liste", haelt=False
     frage, frage_kurz = FRAGEN[lang][FRAGE_VON[key]]
     cta = (t["cta_insider"] if modus == "insider" else
            t["cta_liste"].format(morgen=tag_nr + 1) if tag_nr else t["cta_liste_ohne"])
+    if date.today().weekday() >= 4:            # Freitag: nächste Aktie erst am Montag
+        cta = (cta.replace("Morgen kommt", "Am Montag kommt").replace("Tomorrow is", "On Monday it's")
+               .replace("Tomorrow:", "Monday:"))
     szenen.append({"name": "outro", "text": _pick(t["outro"], seed, "outro").format(
         haelt=t["haelt"] if haelt else "", cta=cta, frage=frage.format(kn=kn))})
 

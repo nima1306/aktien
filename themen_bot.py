@@ -71,6 +71,8 @@ def stimm_cfg(vcfg, tc, lang):
     for k in ("tempo", "eleven_tempo", "eleven_modell", "eleven_einstellungen"):
         if tc.get(k) is not None:
             lcfg[k] = tc[k]
+    if date.today().weekday() >= 5 and lcfg["anbieter"] == "elevenlabs":   # Wochenende: Flash spart Guthaben
+        lcfg["eleven_modell"] = tc.get("wochenende_modell") or "eleven_flash_v2_5"
     return lcfg
 
 
