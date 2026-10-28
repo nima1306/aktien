@@ -103,7 +103,8 @@ def auswahl(produkte, kat, n=6):
 
 def _outro(frage_lang, tag_nr):
     morgen = f" Morgen kommt Tag {tag_nr + 1}." if tag_nr else ""
-    return f"Alle Werte aus Open Food Facts, nach Herstellerangaben und ohne Gewähr.{morgen} Und jetzt du: {frage_lang}"
+    return (f"Das war der Check. Alle Werte aus Open Food Facts, nach Herstellerangaben und ohne Gewähr.{morgen} "
+            f"Und jetzt du: {frage_lang}")
 
 
 def _frage_daten(kurz, tag_nr, kat):
@@ -126,8 +127,9 @@ def video(kat, produkte, tag_nr):
         titel_d = {"tag": "Protein-Check", "name": kat["name"], "kicker": "EIWEISS PRO 100 KCAL",
                    "gross": f"{_z(top['wert'])} g", "sub": top["name"], "sub2": "Platz 1 der beliebtesten Riegel",
                    "farbe": "green"}
-        liste_text = (f"Ich habe die {len(liste)} beliebtesten Proteinriegel in Deutschland verglichen. Am wenigsten "
-                      f"Eiweiß pro Kalorie hat {low['name']} mit {_z(low['wert'])} Gramm.")
+        liste_text = (f"Ich habe die {len(liste)} beliebtesten Proteinriegel in Deutschland verglichen. Auf Platz zwei: "
+                      f"{liste[1]['name']} mit {_z(liste[1]['wert'])} Gramm. Am wenigsten Eiweiß pro Kalorie hat "
+                      f"{low['name']}, mit nur {_z(low['wert'])} Gramm.")
         liste_titel, einheit_wert = "Eiweiß pro 100 kcal", "g"
         frage = ("Welchen Riegel isst du am liebsten? Schreib es in die Kommentare.", "Welcher ist dein Favorit?")
         titel = [f"Der Proteinriegel mit dem meisten Protein? 💪", f"{kat['name']} im Check: Protein pro Kalorie",
@@ -141,13 +143,16 @@ def video(kat, produkte, tag_nr):
         top, low = liste[0], liste[-1]
         g_portion = top["zucker"] * kat["portion"] / 100
         wuerfel = max(1, round(g_portion / WUERFEL_G))
-        hook = f"{wuerfel} Stück Würfelzucker. So viel Zucker steckt in {kat['in']} {top['name']}."
+        hook = (f"{wuerfel} Stück Würfelzucker! So viel Zucker steckt in {kat['in']} {top['name']}. "
+                f"Hättest du das gedacht?")
         titel_d = {"tag": "Zucker-Check", "name": kat["name"], "kicker": f"ZUCKER PRO {kat['pro'].upper()}",
                    "gross": f"{wuerfel} Würfel", "sub": top["name"], "sub2": f"= {_z(g_portion, 0)} g Zucker",
                    "farbe": "gold"}
-        liste_text = (f"Ich habe die {len(liste)} beliebtesten {kat['name']} in Deutschland verglichen. Am meisten Zucker "
-                      f"hat {top['name']} mit {_z(top['zucker'])} Gramm pro 100 {e_lang}, am wenigsten {low['name']} mit "
-                      f"{_z(low['zucker'])} Gramm.")
+        zweit = liste[1]
+        liste_text = (f"Ich habe die {len(liste)} beliebtesten {kat['name']} in Deutschland verglichen. Platz eins beim "
+                      f"Zucker: {top['name']}, mit {_z(top['zucker'])} Gramm pro 100 {e_lang}. Dahinter {zweit['name']} "
+                      f"mit {_z(zweit['zucker'])} Gramm. Und am wenigsten? {low['name']}, mit nur {_z(low['zucker'])} "
+                      f"Gramm.")
         liste_titel, einheit_wert = f"Zucker pro 100 {kat['e']}", "g"
         frage = ("Welches Produkt hat dich am meisten überrascht? Schreib es in die Kommentare.", "Hättest du das gedacht?")
         titel = [f"{wuerfel} Würfel Zucker in {kat['in']} {top['name']}? 😳", f"{kat['name']} im Zucker-Check",
@@ -164,8 +169,9 @@ def video(kat, produkte, tag_nr):
     if top.get("ns"):
         karten.append({"label": "Nutri-Score", "wert": top["ns"],
                        "farbe": "green" if top["ns"] in "AB" else "gold" if top["ns"] == "C" else "red"})
-    detail = (f"{top['name']} im Detail: {_z(top['kcal'], 0)} Kilokalorien, {_z(top['zucker'])} Gramm Zucker und "
-              f"{_z(top['eiweiss'])} Gramm Eiweiß pro 100 {e_lang}." + (f" Nutri-Score {top['ns']}." if top.get("ns") else ""))
+    detail = (f"Schauen wir genauer hin. {top['name']}, pro 100 {e_lang}: {_z(top['kcal'], 0)} Kilokalorien. "
+              f"{_z(top['zucker'])} Gramm Zucker. Und {_z(top['eiweiss'])} Gramm Eiweiß."
+              + (f" Der Nutri-Score: {top['ns']}." if top.get("ns") else ""))
     # Vergleichs-Szene: WHO-Empfehlung (nur wo sinnvoll) oder Faktor bestes/schlechtestes Produkt
     if kat["art"] == "zucker" and kat["who"]:
         anteil = g_portion / 50
@@ -174,15 +180,16 @@ def video(kat, produkte, tag_nr):
                 "text": f"Die WHO empfiehlt höchstens 50 g freien Zucker pro Tag, besser unter 25 g. {kat['pro']} "
                         f"{top['name']}: {_z(g_portion, 0)} g.",
                 "balken": {"anteil": anteil, "label": f"{_z(g_portion, 0)} g von 50 g"}}
-        info_text = (f"Zum Vergleich: Die WHO empfiehlt Erwachsenen höchstens 50 Gramm freien Zucker am Tag, besser unter "
-                     f"25. {kat.get('nom', kat['pro'])} {top['name']} liefert schon {_z(anteil * 100, 0)} "
-                     f"Prozent davon.")
+        info_text = (f"Zum Vergleich. Die WHO empfiehlt Erwachsenen höchstens 50 Gramm freien Zucker am Tag. Besser sogar "
+                     f"unter 25. {kat.get('nom', kat['pro'])} {top['name']} liefert {_z(g_portion, 0)} Gramm. Das sind "
+                     f"{_z(anteil * 100, 0)} Prozent der Tagesgrenze. Mein Tipp: Achte auf der Packung auf die Zeile "
+                     f"davon Zucker.")
     else:
         faktor = top["wert"] / max(low["wert"], 0.1)
         info = {"titel": "Der Unterschied", "unter": f"{top['name']} vs. {low['name']}", "gross": f"{_z(faktor)}×",
                 "farbe": "gold", "text": f"{top['name']} hat {_z(faktor)}-mal so viel "
                                          f"{'Eiweiß pro Kalorie' if kat['art'] == 'protein' else 'Zucker'} wie {low['name']}."}
-        info_text = (f"Der Unterschied ist groß: {top['name']} hat {_z(faktor)} mal so viel "
+        info_text = (f"Der Unterschied ist riesig. {top['name']} hat {_z(faktor)} mal so viel "
                      f"{'Eiweiß pro Kalorie' if kat['art'] == 'protein' else 'Zucker'} wie {low['name']}."
                      + (" Bei Joghurt zählt dabei auch der natürliche Milchzucker mit." if kat["tag"] == "yogurts" else ""))
     szenen = [

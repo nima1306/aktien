@@ -80,6 +80,10 @@ themen:
   bundesliga:
     aktiv: true             # Spieltag-Rückblick, Vorschau mit Topspiel, Torjäger, Meister- und Abstiegskampf
     serie: true
+    stimme: de-DE-FlorianMultilingualNeural   # eigene Stimme fürs Thema möglich, z. B. de-DE-KillianNeural
+    tempo: "+5%"
   ernaehrung:
     aktiv: true             # Zucker- und Protein-Checks beliebter Produkte (Open Food Facts)
     serie: true
+    stimme: de-DE-FlorianMultilingualNeural   # z. B. de-DE-SeraphinaMultilingualNeural (weiblich)
+    tempo: "+5%"

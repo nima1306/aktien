@@ -208,12 +208,14 @@ def zeitplan(szenen, min_sek, lead=0.08, tail=0.28):
         s["dauer"] = lead + s["sprech_dauer"] + tail
     total = sum(s["dauer"] for s in szenen)
     if total < min_sek:                                               # auf Mindestlänge strecken
+        # Fehlende Zeit in kleinen Häppchen auf alle Szenen verteilen (keine langen Stillen),
+        # etwas mehr am Ende, wo die Frage auf dem Bildschirm stehen bleibt.
         extra = min_sek - total
-        anteile = {"chart": 0.4, "procontra": 0.25, "outro": 0.35, "liste": 0.4, "ergebnisse": 0.4,
-                   "tabelle": 0.25, "info": 0.25, "fakten": 0.2, "frage": 0.35}
-        summe = sum(anteile.get(s["name"], 0) for s in szenen) or 1
-        for s in szenen:
-            s["dauer"] += extra * anteile.get(s["name"], 0) / summe
+        gewicht = {s_i: s["sprech_dauer"] * (1.6 if s["name"] in ("outro", "frage") else 1.0)
+                   for s_i, s in enumerate(szenen)}
+        summe = sum(gewicht.values()) or 1
+        for s_i, s in enumerate(szenen):
+            s["dauer"] += extra * gewicht[s_i] / summe
     t = 0.0
     for s in szenen:
         s["start"], s["lead"] = t, lead
@@ -675,18 +677,23 @@ def render(D, szenen, vcfg, out_path):
         print(f"  [{D['lang']}] Stimme erzeugen ...")
         sr = 24000
         ton_ok = sprechen(szenen, vcfg, D["lang"], tmp, sr)
-        total = zeitplan(szenen, float(vcfg.get("min_sekunden", 61.5)))
+        min_sek = float(vcfg.get("min_sekunden", 61.5))
+        total = zeitplan(szenen, min_sek)
+        roh = sum(0.36 + s["sprech_dauer"] for s in szenen)       # Länge ohne Streckung
         ziel = float(vcfg.get("ziel_sekunden", 0) or 0)
-        if ton_ok and ziel and total > ziel + 2:                    # zu lang -> etwas schneller sprechen (max. +15 %)
-            try:
-                basis = int(str(vcfg.get("tempo", "+5%")).replace("%", ""))
-            except ValueError:
-                basis = 5
-            extra = min(15, int(round((total / ziel - 1) * 100)))
-            neu = f"{basis + extra:+d}%"
-            print(f"  [{D['lang']}] {total:.0f} s ist zu lang -> Tempo {neu}")
-            ton_ok = sprechen(szenen, dict(vcfg, tempo=neu), D["lang"], tmp, sr)
-            total = zeitplan(szenen, float(vcfg.get("min_sekunden", 61.5)))
+        try:
+            basis = int(str(vcfg.get("tempo", "+5%")).replace("%", ""))
+        except ValueError:
+            basis = 5
+        neu = None
+        if ton_ok and ziel and total > ziel + 2:                    # zu lang -> etwas schneller (max. +15 %)
+            neu = basis + min(15, int(round((total / ziel - 1) * 100)))
+        elif ton_ok and roh < min_sek - 1.5:                        # zu kurz -> etwas ruhiger statt Stille (max. -12 %)
+            neu = basis - min(12, int(math.ceil((min_sek / roh - 1) * 100)))
+        if neu is not None and neu != basis:
+            print(f"  [{D['lang']}] {roh:.0f} s Sprechzeit -> Tempo {neu:+d}%")
+            ton_ok = sprechen(szenen, dict(vcfg, tempo=f"{neu:+d}%"), D["lang"], tmp, sr)
+            total = zeitplan(szenen, min_sek)
         print(f"  [{D['lang']}] Länge: {total:.1f} s")
         audio = np.zeros(int(total * sr) + sr, dtype=np.float32)
         for s in szenen:

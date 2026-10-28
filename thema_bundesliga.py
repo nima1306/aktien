@@ -140,6 +140,21 @@ def punkte_wort(p):
     return f"{p} Punkt" if p == 1 else f"{p} Punkte"
 
 
+def mit_punkten(p):
+    return f"mit {p} Punkt" if p == 1 else f"mit {p} Punkten"
+
+
+def form_szene(spiele, teams, titel):
+    """Formcheck-Szene für mehrere Teams (letzte 5 Spiele)."""
+    karten, saetze = [], []
+    for t in teams:
+        f, p = form(spiele, t)
+        karten.append({"label": t, "wert": " ".join(f) or "–", "farbe": "green" if p >= 9 else "gold" if p >= 5 else "red"})
+        saetze.append(f"{t} holte {punkte_wort(p)} aus den letzten {len(f)} Spielen.")
+    return {"name": "fakten", "text": "Und die Form? " + " ".join(saetze),
+            "daten": {"titel": "Formcheck", "unter": f"{titel} · letzte 5 Spiele (S/U/N)", "karten": karten}}
+
+
 # ---------------------------------------------------------------- Formate
 
 def _frage_szene(frage, tag_nr, cta_tag=True):
@@ -150,7 +165,7 @@ def _frage_szene(frage, tag_nr, cta_tag=True):
 
 def _outro_text(frage_lang, tag_nr):
     morgen = f" Morgen kommt Tag {tag_nr + 1}." if tag_nr else ""
-    return f"Alle Daten von OpenLigaDB, ohne Gewähr.{morgen} Und jetzt du: {frage_lang}"
+    return f"Das war's. Alle Daten von OpenLigaDB, ohne Gewähr.{morgen} Und jetzt du: {frage_lang}"
 
 
 def rueckblick(D, st, tag_nr):
@@ -183,30 +198,43 @@ def rueckblick(D, st, tag_nr):
     zeilen[mark]["markiert"] = True
     if ueberraschung:
         _, s, v, x, y, _ = ueberraschung
-        hook = (f"Spieltag {st}: {s} schlägt {v} {x} zu {y}. Platz {platz.get(s)} gegen Platz {platz.get(v)}. "
-                f"Hier ist alles, was du wissen musst.")
+        hook = (f"Was für ein Spieltag! {s} schlägt {v} mit {x} zu {y}. Platz {platz.get(s)} gegen Platz "
+                f"{platz.get(v)}. Damit hat kaum jemand gerechnet. Hier ist alles, was du wissen musst.")
         frage = ("Welches Ergebnis hat dich am meisten überrascht? Schreib es in die Kommentare.",
                  "Was hat dich überrascht?")
     else:
-        hook = f"Spieltag {st} ist durch: {tore_ges} Tore in {n} Spielen. Hier ist alles in einer Minute."
+        hook = (f"Spieltag {st} ist vorbei. {tore_ges} Tore in {n} Spielen! Hier kommt alles Wichtige, "
+                f"in einer Minute.")
         frage = ("Wer wird am Ende Meister? Dein Tipp in die Kommentare.", "Wer wird Meister?")
-    top3 = sorted(range(n), key=lambda i: (i != mark, -(zeilen[i]["tore_h"] + zeilen[i]["tore_g"])))[:3]
-    highlights = ", ".join(f"{zeilen[i]['heim']} gegen {zeilen[i]['gast']} {zeilen[i]['tore_h']} zu "
-                           f"{zeilen[i]['tore_g']}" for i in top3)
+    top4 = sorted(range(n), key=lambda i: (i != mark, -(zeilen[i]["tore_h"] + zeilen[i]["tore_g"])))[:4]
+
+    def satz(z):
+        a, b = z["tore_h"], z["tore_g"]
+        if a == b:
+            return f"{z['heim']} und {z['gast']} trennen sich {a} zu {b}."
+        w, l, x, y = (z["heim"], z["gast"], a, b) if a > b else (z["gast"], z["heim"], b, a)
+        return f"{w} gewinnt {x} zu {y} gegen {l}." if x - y < 3 else f"{w} schießt {l} mit {x} zu {y} ab."
+    highlights = " ".join(satz(zeilen[i]) for i in top4)
     abst = tz[0]["pkt"] - tz[1]["pkt"]
-    spitze = (f"In der Tabelle führt {tz[0]['team']} mit {tz[0]['pkt']} Punkten, "
-              + (f"{punkte_wort(abst)} vor {tz[1]['team']}." if abst else f"punktgleich mit {tz[1]['team']}."))
-    unten = f" Ganz unten stehen {tz[-2]['team']} und {tz[-1]['team']}."
+    spitze = (f"Und die Tabelle? Ganz oben steht {tz[0]['team']} mit {tz[0]['pkt']} Punkten. "
+              + (f"Dahinter lauert {tz[1]['team']}, {punkte_wort(abst)} zurück." if abst else
+                 f"Aber {tz[1]['team']} ist punktgleich dran."))
+    rettung = tz[-4]["pkt"] - tz[-3]["pkt"]
+    unten = (f" Im Keller wird es eng. {tz[-3]['team']} steht auf dem Relegationsplatz, {tz[-2]['team']} und "
+             f"{tz[-1]['team']} auf den Abstiegsplätzen." + (f" Der Abstand zum rettenden Ufer: {punkte_wort(rettung)}."
+                                                              if rettung > 0 else ""))
     bester = max(schuetzen.items(), key=lambda x: x[1]) if schuetzen else None
     schnitt = tore_ges / max(1, n)
-    fakten_text = (f"Insgesamt {tore_ges} Tore, im Schnitt {str(round(schnitt, 1)).replace('.', ',')} pro Spiel. "
-                   f"{heim} Heimsiege, {aus} Auswärtssiege, " + (f"{remis} Unentschieden." if remis else "kein Unentschieden."))
+    fakten_text = (f"Ein paar Zahlen zum Spieltag. {tore_ges} Tore, das sind {str(round(schnitt, 1)).replace('.', ',')} "
+                   f"pro Spiel. {heim} Heimsiege. {aus} Auswärtssiege. "
+                   + (f"Und {remis} Mal Unentschieden." if remis else "Und kein einziges Unentschieden."))
     karten = [{"label": "Tore", "wert": str(tore_ges), "farbe": "green"},
               {"label": "Ø pro Spiel", "wert": str(round(schnitt, 1)).replace(".", ",")},
               {"label": "Heimsiege", "wert": str(heim)}, {"label": "Auswärtssiege", "wert": str(aus)},
               {"label": "Remis", "wert": str(remis)}]
     if bester and bester[1] >= 2:
-        fakten_text += f" Mann des Spieltags: {bester[0]} mit {bester[1]} Toren."
+        fakten_text += f" Mann des Spieltags ist {bester[0]}. {bester[1]} Tore in einem Spiel!" if bester[1] >= 3 else \
+            f" Doppelpack für {bester[0]}."
         karten.append({"label": "Mann des Spieltags", "wert": f"{bester[0].split()[-1]} ({bester[1]})", "farbe": "gold"})
     titel_sz = {"name": "titel", "text": hook, "daten": {"tag": f"Spieltag {st}", "name": "Bundesliga",
                 "kicker": "ÜBERRASCHUNG" if ueberraschung else "TORE AM SPIELTAG",
@@ -215,7 +243,7 @@ def rueckblick(D, st, tag_nr):
                 "farbe": "green"}}
     szenen = [
         titel_sz,
-        {"name": "ergebnisse", "text": f"Die wichtigsten Ergebnisse: {highlights}.",
+        {"name": "ergebnisse", "text": f"Die Ergebnisse. {highlights} Alle anderen Spiele siehst du hier.",
          "daten": {"titel": f"Spieltag {st}", "unter": "Alle Ergebnisse", "spiele": zeilen}},
         {"name": "tabelle", "text": spitze + unten,
          "daten": tabelle_szene(tz, "Tabelle", f"nach dem {st}. Spieltag")},
@@ -258,10 +286,22 @@ def vorschau(D, st, tag_nr):
     erstes = next((z for z, m in zip(zeilen, spiele) if z["tore_h"] is None), zeilen[0])
     an0 = anstoss(spiele[zeilen.index(erstes)])
     wann0 = WOCHENTAG_LANG[an0.weekday()] if an0 else "bald"
-    hook = (f"Spieltag {st} steht an, und das Topspiel heißt {a} gegen {b}. Platz {platz.get(a)} gegen Platz "
-            f"{platz.get(b)}.")
-    paar = (f"Los geht es am {wann0} mit {erstes['heim']} gegen {erstes['gast']}. Das Topspiel läuft am "
-            f"{WOCHENTAG_LANG[an.weekday()]} um {an:%H:%M} Uhr." if an else "")
+    hook = (f"Spieltag {st} steht vor der Tür. Und das Topspiel hat es in sich: {a} gegen {b}. Platz "
+            f"{platz.get(a)} gegen Platz {platz.get(b)}. Hier ist alles, was du vorher wissen musst.")
+    uhr = lambda t: f"{t:%H} Uhr {int(t.minute)}" if t.minute else f"{t:%H} Uhr"
+    paar = (f"Los geht es am {wann0} mit {erstes['heim']} gegen {erstes['gast']}. "
+            f"Das Topspiel steigt am {WOCHENTAG_LANG[an.weekday()]} um {uhr(an)}. " if an else "")
+    weitere = [z for z in zeilen if z["tore_h"] is None and not z.get("markiert") and z is not erstes][:2]
+    if weitere:
+        paar += "Außerdem spannend: " + " und ".join(f"{z['heim']} gegen {z['gast']}" for z in weitere) + "."
+    anzahl_tag = {}
+    for m in spiele:
+        t_ = anstoss(m)
+        if t_:
+            anzahl_tag[t_.weekday()] = anzahl_tag.get(t_.weekday(), 0) + 1
+    if anzahl_tag:
+        haupt = max(anzahl_tag, key=anzahl_tag.get)
+        paar += f" Insgesamt {len(spiele)} Spiele, die meisten davon am {WOCHENTAG_LANG[haupt]}."
     frage = ("Dein Tipp fürs Topspiel? Schreib dein Ergebnis in die Kommentare.", "Dein Tipp fürs Topspiel?")
     szenen = [
         {"name": "titel", "text": hook, "daten": {"tag": f"Spieltag {st}", "name": "Vorschau", "kicker": "TOPSPIEL",
@@ -269,13 +309,17 @@ def vorschau(D, st, tag_nr):
          "sub2": f"Platz {platz.get(a)} gegen Platz {platz.get(b)}", "farbe": "green"}},
         {"name": "ergebnisse", "text": paar,
          "daten": {"titel": f"Spieltag {st}", "unter": "Alle Paarungen", "spiele": zeilen}},
-        {"name": "fakten", "text": f"Die Form: {a} holte aus den letzten {len(fa)} Spielen {punkte_wort(pa)}, "
-                                   f"{b} {punkte_wort(pb)}.",
+        {"name": "fakten", "text": (f"Wer ist besser in Form? {a} holte {punkte_wort(pa)} aus den letzten {len(fa)} "
+                                    f"Spielen, {b} {punkte_wort(pb)}. "
+                                    + (f"Vorteil {a}." if pa > pb + 2 else f"Vorteil {b}." if pb > pa + 2
+                                       else "Ein Duell auf Augenhöhe.")),
          "daten": {"titel": "Formcheck", "unter": "letzte 5 Spiele (S/U/N)",
                    "karten": [{"label": a, "wert": " ".join(fa) or "–", "farbe": "green"},
                               {"label": b, "wert": " ".join(fb) or "–", "farbe": "green"},
                               {"label": f"Punkte {a}", "wert": str(pa)}, {"label": f"Punkte {b}", "wert": str(pb)}]}},
-        {"name": "tabelle", "text": f"Vor dem Spieltag führt {tz[0]['team']} mit {tz[0]['pkt']} Punkten.",
+        {"name": "tabelle", "text": (f"Ein Blick auf die Tabelle. {tz[0]['team']} führt mit {tz[0]['pkt']} Punkten, "
+                                     f"vor {tz[1]['team']} mit {tz[1]['pkt']}. Unten zittern {tz[-2]['team']} und "
+                                     f"{tz[-1]['team']}."),
          "daten": tabelle_szene(tz, "Tabelle", f"vor dem {st}. Spieltag")},
         {"name": "frage", "text": _outro_text(frage[0], tag_nr), "daten": _frage_szene(frage[1], tag_nr)},
     ]
@@ -304,19 +348,25 @@ def torjaeger(D, st, tag_nr):
                                    f"{n1} hat schon {t1} Tore nach {st} Spieltagen. Wer kann ihn noch stoppen?"),
          "daten": {"tag": "Torjäger", "name": "Bundesliga", "kicker": n1.upper(), "gross": f"{t1} Tore",
                    "sub": f"nach {st} Spieltagen", "farbe": "gold"}},
-        {"name": "liste", "text": "Dahinter: " + ", ".join(
-            f"{k(x, 'goalGetterName')} mit {k(x, 'goalCount')}" for x in tj[1:3]) + " Toren.",
+        {"name": "liste", "text": " ".join(f"Platz {['zwei', 'drei', 'vier'][i]}: {k(x, 'goalGetterName')} mit "
+                                           f"{k(x, 'goalCount')} Toren." for i, x in enumerate(tj[1:4]))
+                                  + " Das Rennen um die Torjägerkanone ist also noch offen.",
          "daten": {"titel": "Torjägerliste", "unter": f"Saison {D['saison']}/{str(D['saison'] + 1)[2:]}",
                    "zeilen": [{"label": k(x, "goalGetterName"), "wert": int(k(x, "goalCount")),
                                "text": str(k(x, "goalCount")), "markiert": i == 0, "farbe": "gold" if i == 0 else "green"}
                               for i, x in enumerate(tj)]}},
-        {"name": "fakten", "text": f"Die beste Offensive hat {offensiv['team']} mit {offensiv['tore']} Toren, "
-                                   f"die beste Abwehr {defensiv['team']} mit nur {defensiv['gegen']} Gegentoren.",
+        {"name": "fakten", "text": (f"Ein Blick auf die Teams. Die beste Offensive hat {offensiv['team']}: "
+                                    f"{offensiv['tore']} Tore. Die beste Abwehr hat {defensiv['team']}, mit nur "
+                                    f"{defensiv['gegen']} Gegentoren. Insgesamt fielen schon {tore} Tore in dieser "
+                                    f"Saison."),
          "daten": {"titel": "Die Saison in Zahlen", "unter": f"nach {st} Spieltagen",
                    "karten": [{"label": "Tore gesamt", "wert": str(tore), "farbe": "green"},
                               {"label": "Ø pro Spiel", "wert": str(round(tore / spiele, 1)).replace(".", ",")},
                               {"label": "Beste Offensive", "wert": f"{offensiv['team']}"},
                               {"label": "Beste Abwehr", "wert": f"{defensiv['team']}"}]}},
+        {"name": "tabelle", "text": (f"Und in der Tabelle? Oben steht {tz[0]['team']} {mit_punkten(tz[0]['pkt'])}, "
+                                     f"vor {tz[1]['team']} und {tz[2]['team']}. Ganz unten: {tz[-1]['team']}."),
+         "daten": tabelle_szene(tz, "Tabelle", f"nach {st} Spieltagen")},
         {"name": "frage", "text": _outro_text(frage[0], tag_nr), "daten": _frage_szene(frage[1], tag_nr)},
     ]
     titel = [f"{n1}: {t1} Tore nach {st} Spieltagen 🔥", "Bundesliga Torjägerliste – wer holt die Kanone?",
@@ -349,19 +399,24 @@ def rennen(D, st, tag_nr, art):
         titel_s, kicker, gross = "Abstiegskampf", "ABSTAND PLATZ 15 ZU 18", punkte_wort(rette["pkt"] - tz[-1]["pkt"])
         tags = ["bundesliga", "fußball", "abstiegskampf", _tag(teil[-1]["team"]), _tag(teil[-2]["team"]), "fussball", "fyp"]
     zeilen = [dict(z, zone=zone(z["platz"], len(tz))) for z in teil]
-    text_tab = " ".join(f"Platz {z['platz']}: {z['team']} mit {z['pkt']}." for z in (teil[:3] if art == "meisterrennen"
-                                                                                       else teil[-3:]))
+    text_tab = ("Die Tabelle. " + " ".join(f"Platz {z['platz']}: {z['team']} {mit_punkten(z['pkt'])}."
+                                           for z in (teil[:3] if art == "meisterrennen" else teil[-3:]))
+                + (" Jeder Punkt kann am Ende entscheiden." if art != "meisterrennen" else
+                   " Ein Ausrutscher, und alles ist wieder offen." if abst <= 6 else ""))
     szenen = [
         {"name": "titel", "text": hook, "daten": {"tag": titel_s, "name": f"nach {st} Spieltagen", "kicker": kicker,
                                                   "gross": gross, "farbe": "green" if art == "meisterrennen" else "red"}},
         {"name": "tabelle", "text": text_tab, "daten": {"titel": titel_s, "unter": f"Tabelle nach {st} Spieltagen",
                                                         "zeilen": zeilen}},
-        {"name": "liste", "text": "So sieht es bei den Toren aus: " + ", ".join(
-            f"{z['team']} {z['tore']} zu {z['gegen']}" for z in (teil[:3] if art == "meisterrennen" else teil[-3:])) + ".",
+        {"name": "liste", "text": "Und die Tore? " + " ".join(
+            f"{z['team']}: {z['tore']} geschossen, {z['gegen']} kassiert." for z in (teil[:3] if art == "meisterrennen"
+                                                                                  else teil[-3:])),
          "daten": {"titel": "Tore : Gegentore", "unter": titel_s,
                    "zeilen": [{"label": z["team"], "wert": max(z["tore"], 0.1), "text": f"{z['tore']}:{z['gegen']}",
                                "farbe": "green" if z["diff"] >= 0 else "red"} for z in teil]}},
-        {"name": "frage", "text": _outro_text(frage[0], tag_nr), "daten": _frage_szene(frage[1], tag_nr)},
+        form_szene(D["spiele"], [z["team"] for z in (teil[:3] if art == "meisterrennen" else teil[-3:])], titel_s),
+        {"name": "frage", "text": (f"Noch {max(0, 34 - st)} Spieltage, also {3 * max(0, 34 - st)} Punkte zu vergeben. "
+                                   + _outro_text(frage[0], tag_nr)), "daten": _frage_szene(frage[1], tag_nr)},
     ]
     titel = [f"Bundesliga {titel_s} nach {st} Spieltagen ⚽", f"{titel_s}: Die Zahlen", f"{frage[1]} 🤔"]
     return {"id": f"{art}-{date.today().isoformat()}", "szenen": szenen, "titel": titel, "tags": tags,

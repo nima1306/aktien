@@ -44,7 +44,7 @@ def plan_fuer(name, erledigt, tag_nr, demo):
     return mod.video_plan(erledigt, tag_nr)
 
 
-def erstellen(name, plan, tag_nr, vcfg, demo):
+def erstellen(name, plan, tag_nr, vcfg, demo, tcfg=None):
     mod = THEMEN[name]
     os.makedirs("videos", exist_ok=True)
     D = {"lang": "de", "brand": mod.BRAND, "disclaimer": mod.DISCLAIMER, "quellen": mod.QUELLEN, "tag_nr": tag_nr,
@@ -55,7 +55,10 @@ def erstellen(name, plan, tag_nr, vcfg, demo):
     print(f"\nThema {name}: {plan['name']}")
     for s in plan["szenen"]:
         print(f"    ({s['name']}) {s['text']}")
-    lcfg = dict(vcfg, stimme=(vcfg.get("stimmen") or {}).get("de"))
+    eigen = (tcfg or {}).get(name) or {}
+    lcfg = dict(vcfg, stimme=eigen.get("stimme") or (vcfg.get("stimmen") or {}).get("de"))
+    if eigen.get("tempo"):
+        lcfg["tempo"] = eigen["tempo"]
     dauer, ton = video.render(D, copy.deepcopy(plan["szenen"]), lcfg, mp4)
     video.vorschaubild(D, jpg)
     titel = [f"Tag {tag_nr}: {t}" for t in plan["titel"]] if tag_nr else plan["titel"]
@@ -99,7 +102,7 @@ def main():
             if not plan:
                 print(f"Thema {name}: heute kein passendes Video (keine Daten oder alles schon gemacht).")
                 continue
-            neu.append(erstellen(name, plan, tag_nr, vcfg, args.demo))
+            neu.append(erstellen(name, plan, tag_nr, vcfg, args.demo, tcfg))
             if not args.demo:
                 verlauf.setdefault(name, {})[plan["id"]] = date.today().isoformat()
         except Exception as e:
