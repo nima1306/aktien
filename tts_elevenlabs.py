@@ -47,6 +47,24 @@ def restguthaben():
     return rest
 
 
+def kontostatus():
+    """Prüft Schlüssel und Abo, ohne Zeichen zu verbrauchen."""
+    if not schluessel():
+        return {"ok": False, "fehler": "kein Schlüssel - GitHub-Secret ELEVENLABS_API_KEY fehlt oder ist falsch benannt"}
+    try:
+        r = requests.get(f"{API}/user/subscription", headers={"xi-api-key": schluessel()}, timeout=20)
+    except requests.RequestException as e:
+        return {"ok": False, "fehler": f"ElevenLabs nicht erreichbar ({e})"}
+    if r.status_code == 401:
+        return {"ok": False, "fehler": "Schlüssel ungültig oder ohne Berechtigung 'User: Read' - neuen Schlüssel anlegen"}
+    if r.status_code != 200:
+        return {"ok": False, "fehler": f"ElevenLabs antwortet mit {r.status_code}: {r.text[:120]}"}
+    j = r.json()
+    limit, genutzt = int(j.get("character_limit", 0)), int(j.get("character_count", 0))
+    _guthaben["rest"] = limit - genutzt
+    return {"ok": True, "tarif": j.get("tier", "?"), "limit": limit, "rest": limit - genutzt}
+
+
 def verbrauchen(n):
     if _guthaben.get("rest") is not None:
         _guthaben["rest"] -= n

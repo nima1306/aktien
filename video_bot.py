@@ -231,7 +231,36 @@ STIMMPROBE = {
 }
 
 
-def stimmprobe(vcfg, monate, tage, modus):
+ELEVEN_PROBE = {"de": "Hallo! So klingt ab jetzt die Stimme in deinen Videos.",
+                "en": "Hi! This is how your videos will sound from now on."}
+
+
+def eleven_proben(cfg, vcfg):
+    """ElevenLabs prüfen (kostet nichts) und je eingestellter Stimme einen Satz sprechen (ca. 50 Zeichen)."""
+    import tts_elevenlabs as el
+    print("ElevenLabs-Prüfung:")
+    st = el.kontostatus()
+    if not st["ok"]:
+        print(f"  NICHT OK: {st['fehler']}")
+        return []
+    print(f"  OK - Tarif {st['tarif']}, noch {st['rest']:,} von {st['limit']:,} Zeichen übrig".replace(",", "."))
+    proben = {}                                   # (stimme, modell, sprache) -> wofür
+    if vcfg.get("anbieter") == "elevenlabs":
+        for lang in vcfg["sprachen"]:
+            sid = (vcfg.get("eleven_stimmen") or {}).get(lang) or "brian"
+            proben.setdefault((sid, vcfg.get("eleven_modell", "eleven_multilingual_v2"), lang), []).append("Aktien")
+    for name, tc in (cfg.get("themen") or {}).items():
+        if (tc or {}).get("anbieter") != "elevenlabs":
+            continue
+        for lang in (tc.get("sprachen") or ["de"]):
+            sid = tc.get("eleven_stimme") or "brian"
+            sid = sid.get(lang, "brian") if isinstance(sid, dict) else sid
+            modell = tc.get("eleven_modell") or vcfg.get("eleven_modell", "eleven_multilingual_v2")
+            proben.setdefault((sid, modell, lang), []).append({"ernaehrung": "Ernährung"}.get(name, name.capitalize()))
+    return proben
+
+
+def stimmprobe(vcfg, monate, tage, modus, cfg=None):
     """Hook + Eckdaten mit jeder Stimme sprechen lassen -> kurze Videos in der App zum Vergleichen."""
     import copy
     r, ins, preise, radar = demo_daten(monate, "us")
@@ -244,7 +273,7 @@ def stimmprobe(vcfg, monate, tage, modus):
         for i, (stimme, label) in enumerate(STIMMPROBE.get(lang, [])):
             name = f"stimme_{lang}_{stimme.split('-')[2]}"
             mp4 = os.path.join("videos", name + ".mp4")
-            lcfg = dict(vcfg, stimme=stimme, ersatz=False, min_sekunden=0, musik=None)
+            lcfg = dict(vcfg, anbieter="edge", stimme=stimme, ersatz=False, min_sekunden=0, musik=None)
             try:
                 dauer, ton = video.render(D, copy.deepcopy(sk["szenen"][:2]), lcfg, mp4)
             except Exception as e:
@@ -261,6 +290,31 @@ def stimmprobe(vcfg, monate, tage, modus):
                         "frage": f"{lang}: {stimme}", "winkel": "stimmprobe", "dauer": round(dauer, 1), "ton": True,
                         "demo": True, "erstellt": (jetzt - timedelta(seconds=i)).isoformat(timespec="seconds")})
             print(f"  {stimme}: ok")
+    proben = eleven_proben(cfg or {}, vcfg)
+    for k, ((sid, modell, lang), wofuer) in enumerate(proben.items()):
+        if lang not in ELEVEN_PROBE:
+            continue
+        name = f"eleven_{lang}_{sid}_{modell.split('_')[1]}"[:60]
+        mp4 = os.path.join("videos", name + ".mp4")
+        sk = skript.bauen(a, ins, D0["radar"], 480, lang, monate, modus, False, "stimmprobe")
+        D = dict(D0, lang=lang, hook=sk["hook"], frage_kurz=sk["frage_kurz"], pro=sk["pro"], contra=sk["contra"])
+        sz = copy.deepcopy(sk["szenen"][:1])
+        sz[0]["text"] = ELEVEN_PROBE[lang]
+        lcfg = dict(vcfg, anbieter="elevenlabs", eleven_stimme=sid, eleven_modell=modell, eleven_tempo=1.0,
+                    ersatz=False, min_sekunden=0, musik=None)
+        try:
+            dauer, ton = video.render(D, sz, lcfg, mp4)
+        except Exception as e:
+            print(f"  ElevenLabs {sid}: fehlgeschlagen ({e})")
+            continue
+        video.vorschaubild(D, os.path.join("videos", name + ".jpg"))
+        modell_name = "Flash" if "flash" in modell else "Multilingual v2"
+        neu.append({"id": name, "datum": date.today().isoformat(), "ticker": sid,
+                    "name": f"ElevenLabs: {sid.capitalize()} ({modell_name}) - {', '.join(wofuer)}",
+                    "sprache": lang, "mp4": name + ".mp4", "bild": name + ".jpg",
+                    "text": f"ElevenLabs funktioniert. Stimme {sid}, Modell {modell}, genutzt für: {', '.join(wofuer)}",
+                    "frage": f"{lang}: {sid}", "winkel": "stimmprobe", "dauer": round(dauer, 1), "ton": bool(ton),
+                    "demo": True, "erstellt": (jetzt + timedelta(seconds=10 - k)).isoformat(timespec="seconds")})
     archiv_aktualisieren(neu, vcfg, demo=True)
 
 
@@ -367,10 +421,11 @@ def main():
     eigene = {str(t).upper() for t in vcfg.get("eigene_positionen") or []}
 
     if args.stimmprobe:
-        stimmprobe(vcfg, monate, tage, modus)
+        stimmprobe(vcfg, monate, tage, modus, cfg)
         return
 
     if args.demo:
+        vcfg["anbieter"] = "edge"          # Testvideos mit Gratis-Stimme: spart ElevenLabs-Guthaben
         r, ins, preise, radar = demo_daten(monate, args.demo)
         a, ins, D = daten_paket(r, ins, 480, preise, tage, monate, radar, modus, r["ticker"] in eigene)
         neu = erstellen(a, ins, D["radar"], D, vcfg, 480, demo=True, tag_nr=12 if vcfg.get("serie", True) else None)

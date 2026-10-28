@@ -93,7 +93,8 @@ def erstellen(name, plan, tag_nr, vcfg, demo, tc):
         print(f"\nThema {name} [{lang}]: {plan['name']}")
         for s in fs["szenen"]:
             print(f"    ({s['name']}) {s['text']}")
-        dauer, ton = video.render(D, copy.deepcopy(fs["szenen"]), stimm_cfg(vcfg, tc, lang), mp4)
+        dauer, ton = video.render(D, copy.deepcopy(fs["szenen"]),
+                                   dict(stimm_cfg(vcfg, tc, lang), **({"anbieter": "edge"} if demo else {})), mp4)
         video.vorschaubild(D, jpg)
         wort = ("Tag" if lang == "de" else "Day")
         titel = [f"{wort} {tag_nr}: {t}" for t in fs["titel"]] if tag_nr else fs["titel"]
