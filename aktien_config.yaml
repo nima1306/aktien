@@ -52,7 +52,8 @@ video:
   chart_monate: 6
   musik: musik.mp3          # optional: lizenzfreie Musik als musik.mp3 hochladen, sonst ohne Musik
   musik_lautstaerke: 0.12
-  anbieter: edge            # Stimme: edge (kostenlos) oder elevenlabs (Abo, braucht Secret ELEVENLABS_API_KEY)
+  anbieter: elevenlabs      # Stimme: edge (kostenlos) oder elevenlabs (Abo, braucht Secret ELEVENLABS_API_KEY)
+  eleven_modell: eleven_flash_v2_5   # Flash = halber Verbrauch; eleven_multilingual_v2 = ausdrucksstärker, doppelter Verbrauch
   eleven_stimmen:           # ElevenLabs-Stimme je Sprache: Name (brian, bill, daniel, george, callum, liam, sarah,
     de: brian               # alice) oder eine Voice-ID aus deiner ElevenLabs-Stimmenbibliothek
     en: brian
@@ -84,11 +85,17 @@ themen:
   bundesliga:
     aktiv: true             # Spieltag-Rückblick, Vorschau mit Topspiel, Torjäger, Meister- und Abstiegskampf
     serie: true
+    anbieter: elevenlabs
+    eleven_stimme: liam     # klar, lebendig - gut für Sport
+    eleven_modell: eleven_flash_v2_5
     stimme: de-DE-FlorianMultilingualNeural   # eigene Stimme fürs Thema möglich, z. B. de-DE-KillianNeural
     tempo: "+5%"
   ernaehrung:
     aktiv: true             # Zucker- und Protein-Checks beliebter Produkte (Open Food Facts)
     serie: true
+    anbieter: elevenlabs
+    eleven_stimme: sarah    # weiblich, sanft
+    eleven_modell: eleven_flash_v2_5
     stimme: de-DE-FlorianMultilingualNeural   # z. B. de-DE-SeraphinaMultilingualNeural (weiblich)
     tempo: "+5%"
   mindset:
@@ -99,6 +106,7 @@ themen:
     eleven_stimme:
       de: brian             # tiefe Erzählerstimme; eigene deutsche Stimme: Voice-ID hier eintragen
       en: brian
+    eleven_modell: eleven_multilingual_v2   # beste Betonung (doppelter Verbrauch) - lohnt sich hier
     eleven_tempo: 0.95      # 0.7 bis 1.2 (etwas ruhiger wirkt hochwertiger)
     eleven_einstellungen:
       stability: 0.45       # niedriger = lebendiger, höher = gleichmäßiger
