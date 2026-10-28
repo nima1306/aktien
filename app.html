@@ -64,6 +64,11 @@ display:flex;align-items:center;justify-content:center}
 .actions .wide{grid-column:1/-1}
 label.chk{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;cursor:pointer;min-height:44px}
 label.chk input{width:22px;height:22px;accent-color:var(--green)}
+.tt{display:grid;gap:6px}
+.tt-h{font-size:12px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.tt-b{justify-content:flex-start;text-align:left;font-weight:600;font-size:15px;min-height:40px;padding:8px 12px;background:var(--bg);border:1px solid var(--line)}
+.tt-b.on{border-color:var(--green);background:var(--green-d)}
+.tags{font-size:14px;color:var(--blue);line-height:1.6}
 .empty{text-align:center;color:var(--muted);padding:50px 10px}
 dialog{border:0;border-radius:20px;background:var(--panel);color:var(--ink);padding:0;max-width:min(560px,94vw);width:100%}
 dialog::backdrop{background:rgba(0,0,0,.7)}
@@ -200,6 +205,9 @@ function karte(x) {
     <div class="body">
       <div class="title">${esc(x.name)} <span>${esc(x.ticker)} · ${Math.round(x.dauer)} s</span></div>
       <div class="q">${esc(x.frage || "")}</div>
+      ${x.titel ? `<div class="tt"><div class="tt-h">Titel wählen</div>
+        ${x.titel.map((t, i) => `<button class="tt-b ${i === titelWahl(x.id) ? "on" : ""}" data-act="titel" data-i="${i}">${esc(t)}</button>`).join("")}
+        <div class="tags">${(x.tags || []).map(t => "#" + esc(t)).join(" ")}</div></div>` : ""}
       <div class="actions">
         <button class="primary wide" data-act="share">${blobs[x.id] ? "Jetzt an TikTok teilen" : "An TikTok teilen"}</button>
         <button data-act="copy">Text kopieren</button>
@@ -209,9 +217,15 @@ function karte(x) {
     </div></article>`;
 }
 
+const titelWahl = id => store.get("titel", {})[id] || 0;
+function beschreibung(x) {
+  if (!x.titel) return x.text;
+  return x.titel[titelWahl(x.id)] + "\n\n" + (x.hinweis || "") + "\n\n" + (x.tags || []).map(t => "#" + t).join(" ");
+}
 async function kopieren(x) {
-  try { await navigator.clipboard.writeText(x.text); return true; }
-  catch (e) { const t = document.createElement("textarea"); t.value = x.text; document.body.appendChild(t); t.select();
+  const text = beschreibung(x);
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch (e) { const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
     let ok = false; try { ok = document.execCommand("copy"); } catch (e2) {} t.remove(); return ok; }
 }
 
@@ -244,6 +258,8 @@ $("#list").addEventListener("click", async e => {
   if (act === "copy") toast((await kopieren(x)) ? "Beschreibung kopiert" : "Kopieren nicht möglich");
   if (act === "share") teilen(x, el);
   if (act === "posted") { setPosted(id, el.checked); zeigen(); }
+  if (act === "titel") { const w = store.get("titel", {}); w[id] = +el.dataset.i; store.set("titel", w);
+    el.parentElement.querySelectorAll(".tt-b").forEach(b => b.classList.toggle("on", b === el)); toast("Titel gewählt"); }
 });
 $("#player").addEventListener("click", e => { if (e.target.id === "player") { $("#pv").pause(); $("#player").close(); } });
 $("#player").addEventListener("close", () => $("#pv").pause());

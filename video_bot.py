@@ -133,12 +133,13 @@ def erstellen(a, ins, rad, D0, vcfg, n_aktien, demo=False):
         lcfg = dict(vcfg, stimme=(vcfg.get("stimmen") or {}).get(lang))
         dauer, ton = video.render(D, sk["szenen"], lcfg, mp4)
         video.vorschaubild(D, jpg)
-        text = skript.beschreibung(a, ins, lang, sk["frage_kurz"])
+        text = skript.beschreibung(a, ins, lang, sk["frage_kurz"], sk["titel"][0], sk["tags"])
         with open(txt, "w", encoding="utf-8") as f:
             f.write(text + "\n\n---\n" + "\n".join(s["text"] for s in sk["szenen"]))
         print(f"  [{lang}] fertig: {mp4} ({dauer:.1f} s, Ton: {'ja' if ton else 'NEIN'})")
         eintraege.append({"id": name, "datum": date.today().isoformat(), "ticker": D0["ticker"], "name": D0["kurzname"],
-                          "sprache": lang, "mp4": name + ".mp4", "bild": name + ".jpg", "text": text,
+                          "sprache": lang, "mp4": name + ".mp4", "bild": name + ".jpg", "text": text, "titel": sk["titel"], "tags": sk["tags"],
+                          "hinweis": text.split("\n\n")[1],
                           "frage": sk["frage_kurz"], "winkel": sk["winkel"], "dauer": round(dauer, 1), "ton": ton,
                           "demo": demo, "erstellt": datetime.now().isoformat(timespec="seconds")})
     return eintraege

@@ -524,8 +524,9 @@ def bauen(a, ins, rad, n_aktien, lang="de", monate=6, modus="liste", haelt=False
 
     for s in szenen:
         s["text"] = " ".join(s["text"].split())
+    titel, tags = titel_tags(key, dict(a, _n_aktien=n_aktien, _mentions=rd["mentions"] if rd else 0), ins, lang)
     return {"szenen": szenen, "hook": hook_bild(key, a, ins, rad, lang, n_aktien), "frage_kurz": frage_kurz,
-            "pro": [s for s, _ in pro], "contra": [s for s, _ in contra], "winkel": key}
+            "pro": [s for s, _ in pro], "contra": [s for s, _ in contra], "winkel": key, "titel": titel, "tags": tags}
 
 
 def stimmung_text(rad, lang, seed):
@@ -561,17 +562,107 @@ def stimmung_text(rad, lang, seed):
     return " ".join(s)
 
 
-def beschreibung(a, ins, lang, frage_kurz):
-    """Text für das TikTok-Beschreibungsfeld."""
+# ---------------------------------------------------------------- Titel & Hashtags
+
+# Drei Titel je Aufhänger (erste Zeile der Beschreibung = das, was man im Feed liest).
+# Neugierig machen, aber nichts versprechen: keine "Kaufsignale", keine Kursziele als Garantie.
+TITEL = {
+    "de": {
+        "insider": ["{wer_kurz} kaufen {kn} für {summe} 👀", "Das Management von {kn} kauft – mit eigenem Geld",
+                    "Warum kaufen Insider gerade {kn}?"],
+        "still": ["Insider kaufen {kn}, aber keiner redet drüber 🤫", "{summe} Insiderkäufe bei {kn} – und Funkstille",
+                  "Übersieht der Markt gerade {kn}?"],
+        "dip": ["{kn}: {dd} unter dem Hoch – Chance oder Falle?", "Starke Zahlen, schwacher Kurs: {kn}",
+                "Ist {kn} jetzt zu billig?"],
+        "upside": ["Analysten sehen {pot} Potenzial bei {kn} 📈", "{n_an} Analysten, ein klares Bild: {kn}",
+                   "Unterschätzt der Markt {kn}?"],
+        "hype": ["Reddit dreht bei {kn} durch 🔥", "{mentions} Reddit-Erwähnungen in 24 Std.: {kn}",
+                 "Hype oder Substanz? {kn} im Check"],
+        "momentum": ["{kn}: {r12} in 12 Monaten 🚀", "Zu spät für {kn}?", "Läuft {kn} einfach weiter?"],
+        "dividend": ["{div} Dividende: Wie sicher ist {kn}?", "Dividenden-Check: {kn}",
+                     "Zu schön, um wahr zu sein? {kn}"],
+        "top": ["Platz {rang} von {n}: {kn} 🏆", "Die Nr. {rang} in meinem Aktien-Scanner", "Warum ist {kn} so stark?"],
+        "score": ["{kn} im Daten-Check: {score}/100", "Lohnt sich {kn}? Die Zahlen", "{kn} kurz erklärt 📊"],
+    },
+    "en": {
+        "insider": ["{wer_kurz} are buying {kn} – {summe} 👀", "{kn} management is buying with their own money",
+                    "Why are insiders buying {kn} right now?"],
+        "still": ["Insiders are buying {kn} and nobody's talking 🤫", "{summe} in insider buys at {kn} – total silence",
+                  "Is the market missing {kn}?"],
+        "dip": ["{kn}: {dd} below its high – opportunity or trap?", "Strong numbers, weak stock: {kn}",
+                "Is {kn} too cheap now?"],
+        "upside": ["Analysts see {pot} upside in {kn} 📈", "{n_an} analysts, one clear picture: {kn}",
+                   "Is the market underestimating {kn}?"],
+        "hype": ["Reddit is going crazy over {kn} 🔥", "{mentions} Reddit mentions in 24h: {kn}",
+                 "Hype or substance? {kn} checked"],
+        "momentum": ["{kn}: {r12} in 12 months 🚀", "Too late for {kn}?", "Can {kn} keep running?"],
+        "dividend": ["{div} dividend: how safe is {kn}?", "Dividend check: {kn}", "Too good to be true? {kn}"],
+        "top": ["Rank {rang} of {n}: {kn} 🏆", "The #{rang} stock in my scanner", "Why is {kn} so strong?"],
+        "score": ["{kn} by the numbers: {score}/100", "Is {kn} worth it? The data", "{kn} explained 📊"],
+    },
+}
+TAG_BRANCHE = {
+    "de": {"Technology": "techaktien", "Healthcare": "pharmaaktien", "Financial Services": "bankaktien",
+           "Consumer Cyclical": "konsumaktien", "Consumer Defensive": "konsumaktien", "Industrials": "industrieaktien",
+           "Energy": "energieaktien", "Utilities": "versorger", "Real Estate": "immobilienaktien",
+           "Basic Materials": "rohstoffe", "Communication Services": "techaktien"},
+    "en": {"Technology": "techstocks", "Healthcare": "healthcarestocks", "Financial Services": "bankstocks",
+           "Consumer Cyclical": "consumerstocks", "Consumer Defensive": "consumerstocks", "Industrials": "industrials",
+           "Energy": "energystocks", "Utilities": "utilities", "Real Estate": "reits", "Basic Materials": "commodities",
+           "Communication Services": "techstocks"},
+}
+TAG_WINKEL = {
+    "de": {"insider": ["insider", "insiderkäufe"], "still": ["insider", "geheimtipp"], "dip": ["nachkaufen", "value"],
+           "upside": ["kursziel", "analysten"], "hype": ["reddit", "wallstreetbets"], "momentum": ["aktientrend", "wachstum"],
+           "dividend": ["dividende", "passiveseinkommen"], "top": ["aktienanalyse", "aktientipp"],
+           "score": ["aktienanalyse", "geldanlage"]},
+    "en": {"insider": ["insiderbuying", "smartmoney"], "still": ["insiderbuying", "hiddengem"],
+           "dip": ["buythedip", "valueinvesting"], "upside": ["pricetarget", "analysts"], "hype": ["reddit", "wallstreetbets"],
+           "momentum": ["momentum", "growthstocks"], "dividend": ["dividends", "passiveincome"],
+           "top": ["stockanalysis", "stockpicks"], "score": ["stockanalysis", "investing"]},
+}
+
+
+def _tag(s):
+    return "".join(c for c in s.lower() if c.isalnum())
+
+
+def titel_tags(key, a, ins, lang):
+    """3 Titel und 7-8 Hashtags (gezielt statt Masse: Firma, Ticker, Thema, Branche, Markt, Reichweite)."""
+    de = lang == "de"
     kn = kurzname(a["name"])
-    tag = "".join(c for c in kn if c.isalnum()).lower()
-    tk = a["ticker"].split(".")[0].lower().replace("-", "")
+    pot, r12, div = _f(a.get("kursziel_potenzial")), _f(a.get("rendite_12m")), _f(a.get("div_rendite")) or 0
+    w = dict(kn=kn, rang=int(a["rang"]), n=a.get("_n_aktien", ""), score=int(round(a["score"])),
+             n_an=int(_f(a.get("numberOfAnalystOpinions")) or 0), mentions=(a.get("_mentions") or 0),
+             pot=prozent(pot, lang) if pot is not None else "", r12=prozent(r12, lang) if r12 is not None else "",
+             dd=prozent(a["_abstand_hoch"], lang) if a.get("_abstand_hoch") is not None else "",
+             div=(zahl(div * 100, lang) + (" %" if de else "%")), summe="", wer_kurz="Insider" if de else "Insiders")
+    if ins and ins.get("kaeufe"):
+        w["summe"] = geld(ins["summe"], ins.get("waehrung", "USD"), lang)
+        n = ins["anzahl_kaeufer"]
+        if n > 1:
+            w["wer_kurz"] = f"{ZAHLWORT[lang][min(n, 10)].capitalize()} Insider" if de else \
+                f"{ZAHLWORT[lang][min(n, 10)].capitalize()} insiders"
+    titel = [t.format(**w) for t in TITEL[lang].get(key, TITEL[lang]["score"])]
+    tags = [_tag(kn), _tag(a["ticker"].split(".")[0])]
+    tags += TAG_WINKEL[lang].get(key, [])
+    if TAG_BRANCHE[lang].get(a.get("branche")):
+        tags.append(TAG_BRANCHE[lang][a["branche"]])
+    tags += (["dax"] if a["ticker"].endswith(".DE") else []) if de else []
+    tags += ["aktien", "börse"] if de else ["stocks", "stockmarket"]
+    tags.append("fyp")
+    gesehen, sauber = set(), []
+    for t in tags:
+        if t and t not in gesehen:
+            gesehen.add(t)
+            sauber.append(t)
+    return titel, sauber[:9]
+
+
+def beschreibung(a, ins, lang, frage_kurz, titel=None, tags=None):
+    """Text für das TikTok-Beschreibungsfeld: Titel, Frage, Hinweis, Hashtags."""
+    kn = kurzname(a["name"])
     q = ", ".join(x for x in ((ins or {}).get("quelle"), "Yahoo Finance") if x)
-    hat_ins = bool(ins and ins.get("kaeufe"))
-    if lang == "de":
-        return (f"{kn} im Daten-Check: {frage_kurz} 👇 Keine Anlageberatung, nur Daten ({q}).\n"
-                f"#aktien #{tag} #{tk} #börse #investieren #finanzen #aktienanalyse"
-                + (" #insider" if hat_ins else "") + " #fyp")
-    return (f"{kn} by the numbers: {frage_kurz} 👇 Not financial advice, just data ({q}).\n"
-            f"#stocks #{tag} #{tk} #stockmarket #investing #finance"
-            + (" #insiderbuying" if hat_ins else "") + " #fyp")
+    titel = titel or (f"{kn} im Daten-Check" if lang == "de" else f"{kn} by the numbers")
+    hinweis = f"Keine Anlageberatung, nur Daten ({q})." if lang == "de" else f"Not financial advice, just data ({q})."
+    return f"{titel}\n\n{frage_kurz} 👇\n{hinweis}\n\n" + " ".join("#" + t for t in (tags or []))
