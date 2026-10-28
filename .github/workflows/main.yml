@@ -6,9 +6,9 @@ on:
   workflow_dispatch:          # per Knopf (GitHub oder App) startbar
     inputs:
       modus:
-        description: "normal = Scan + Videos, demo = Testvideo, stimmen = Hörproben aller Stimmen"
+        description: "normal = alles, demo = Testvideos, stimmen = Hörproben, themen = nur Bundesliga/Ernährung"
         type: choice
-        options: [normal, demo, stimmen]
+        options: [normal, demo, stimmen, themen]
         default: normal
       ticker:
         description: "Optional: Video für diese Aktie (z. B. NVDA oder SAP.DE)"
@@ -59,7 +59,8 @@ jobs:
           mkdir -p speicher/bericht
           cp aktien_bericht.html speicher/bericht/
           cp aktien_rangliste.xlsx speicher/bericht/ 2>/dev/null || true
-      - name: Videos erstellen
+      - name: Aktien-Videos erstellen
+        if: env.MODUS != 'themen'
         env:
           AKTIEN_THREADS: "3"
         run: |
@@ -68,6 +69,11 @@ jobs:
           elif [ -n "$TICKER" ]; then python video_bot.py --ticker "$TICKER"
           else python video_bot.py; fi
         continue-on-error: true    # falls ein Video scheitert, wird der Bericht trotzdem veröffentlicht
+      - name: Themen-Videos erstellen (Bundesliga, Ernährung)
+        if: env.MODUS == 'normal' || env.MODUS == 'themen' || env.MODUS == 'demo'
+        run: |
+          if [ "$MODUS" = "demo" ]; then python themen_bot.py --demo; else python themen_bot.py; fi
+        continue-on-error: true
       - name: Webseite und App vorbereiten
         run: |
           mkdir -p site/app/videos
