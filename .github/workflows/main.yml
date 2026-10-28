@@ -2,7 +2,8 @@ name: Aktien-Scanner
 
 on:
   schedule:
-    - cron: "23 5 * * 1-5"   # Montag bis Freitag, ca. 6:30 Uhr deutscher Zeit
+    - cron: "23 5 * * 1-5"   # Montag bis Freitag, ca. 6:30 Uhr deutscher Zeit: alles
+    - cron: "23 7 * * 0,6"   # Samstag und Sonntag, ca. 8:30 Uhr: nur Themen (Börse zu)
   workflow_dispatch:          # per Knopf (GitHub oder App) startbar
     inputs:
       modus:
@@ -29,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      MODUS: ${{ inputs.modus || 'normal' }}
+      MODUS: ${{ inputs.modus || (github.event.schedule == '23 7 * * 0,6' && 'themen') || 'normal' }}
       TICKER: ${{ inputs.ticker || '' }}
     environment:
       name: github-pages
