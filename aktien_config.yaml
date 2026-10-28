@@ -31,7 +31,7 @@ bericht:
 
 # ===== Insider-Daten (US: SEC Form 4, Deutschland: BaFin) =====
 insider:
-  sec_kontakt: "Matt Schulln mattschulln@gmail.com"  # PFLICHT: die SEC verlangt Name + E-Mail im Abruf
+  sec_kontakt: "Matt Schulln mattschulln@gmail.com"   # PFLICHT: die SEC verlangt Name + E-Mail im Abruf
   tage: 90                                        # Käufe der letzten X Tage
   max_aktien: 600                                 # so viele US-Aktien werden geprüft
 
@@ -42,9 +42,9 @@ video:
   anzahl: 1                 # Aktien pro Tag (jede Aktie gibt ein Video pro Sprache)
   sprachen: [de, en]        # zwei Accounts: dieselben Videos auf Deutsch und Englisch
   stimmen:
-    de: de-DE-ConradNeural       # Alternativen: de-DE-KillianNeural, de-DE-KatjaNeural (weiblich)
-    en: en-US-ChristopherNeural  # Alternativen: en-US-GuyNeural, en-US-AriaNeural (weiblich)
-  tempo: "+10%"             # Sprechtempo (TikTok mag es zügig)
+    de: de-DE-FlorianMultilingualNeural   # Hörproben: in der App "Stimmen anhören"
+    en: en-US-AndrewMultilingualNeural    # Name aus der Hörprobe hier eintragen
+  tempo: "+5%"              # Sprechtempo: +0% ruhig, +5% natürlich, +10% zügig
   min_sekunden: 61.5        # TikTok zahlt nur für Videos über 1 Minute
   chart_monate: 6
   musik: musik.mp3          # optional: lizenzfreie Musik als musik.mp3 hochladen, sonst ohne Musik

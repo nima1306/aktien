@@ -6,6 +6,7 @@ auf Deutsch und Englisch, mit KI-Stimme und Untertiteln.
   python video_bot.py --modus insider  einmalig anderer Modus
   python video_bot.py --demo           Testvideos mit erfundenen Daten (ohne Scanner, schnell)
   python video_bot.py --demo liste     dasselbe ohne Insiderkäufe | --demo dax  deutsche Aktie
+  python video_bot.py --stimmprobe     kurze Hörproben aller Stimmen (zum Aussuchen in der App)
 
 Modi:
   liste    arbeitet die Rangliste des Scanners ab: jeden Tag die nächste Aktie, die noch kein Video hat.
@@ -31,7 +32,7 @@ VERLAUF = os.path.join(SPEICHER, "video_verlauf.json")
 ARCHIV = os.path.join(SPEICHER, "archiv")
 DEFAULT_VIDEO = {
     "modus": "liste", "anzahl": 1, "sprachen": ["de", "en"],
-    "stimmen": {"de": "de-DE-ConradNeural", "en": "en-US-ChristopherNeural"}, "tempo": "+10%",
+    "stimmen": {"de": "de-DE-FlorianMultilingualNeural", "en": "en-US-AndrewMultilingualNeural"}, "tempo": "+5%",
     "min_sekunden": 61.5, "chart_monate": 6, "musik": "musik.mp3", "musik_lautstaerke": 0.12,
     "liste_top": 150, "liste_filter": "alle", "wiederholen_nach_tagen": 180,
     "min_kaufsumme": 100_000, "gewicht_scanner": 0.4, "gewicht_insider": 0.6, "gewicht_stimmung": 0.1,
@@ -209,6 +210,51 @@ def demo_daten(monate, art="us"):
     return r, ins, preise, radar
 
 
+# ---------------------------------------------------------------- Stimmprobe
+
+STIMMPROBE = {
+    "de": [("de-DE-FlorianMultilingualNeural", "Florian (natürlich)"), ("de-DE-SeraphinaMultilingualNeural",
+            "Seraphina (natürlich, weiblich)"), ("de-DE-ConradNeural", "Conrad"), ("de-DE-KillianNeural", "Killian"),
+           ("de-DE-KatjaNeural", "Katja (weiblich)"), ("de-DE-AmalaNeural", "Amala (weiblich)")],
+    "en": [("en-US-AndrewMultilingualNeural", "Andrew (natural)"), ("en-US-BrianMultilingualNeural", "Brian (natural)"),
+           ("en-US-AvaMultilingualNeural", "Ava (natural, female)"), ("en-US-EmmaMultilingualNeural",
+            "Emma (natural, female)"), ("en-US-ChristopherNeural", "Christopher"), ("en-US-GuyNeural", "Guy")],
+}
+
+
+def stimmprobe(vcfg, monate, tage, modus):
+    """Hook + Eckdaten mit jeder Stimme sprechen lassen -> kurze Videos in der App zum Vergleichen."""
+    import copy
+    r, ins, preise, radar = demo_daten(monate, "us")
+    a, ins, D0 = daten_paket(r, ins, 480, preise, tage, monate, radar, modus, False)
+    os.makedirs("videos", exist_ok=True)
+    neu, jetzt = [], datetime.now()
+    for lang in vcfg["sprachen"]:
+        sk = skript.bauen(a, ins, D0["radar"], 480, lang, monate, modus, False, "stimmprobe")
+        D = dict(D0, lang=lang, hook=sk["hook"], frage_kurz=sk["frage_kurz"], pro=sk["pro"], contra=sk["contra"])
+        for i, (stimme, label) in enumerate(STIMMPROBE.get(lang, [])):
+            name = f"stimme_{lang}_{stimme.split('-')[2]}"
+            mp4 = os.path.join("videos", name + ".mp4")
+            lcfg = dict(vcfg, stimme=stimme, ersatz=False, min_sekunden=0, musik=None)
+            try:
+                dauer, ton = video.render(D, copy.deepcopy(sk["szenen"][:2]), lcfg, mp4)
+            except Exception as e:
+                print(f"  {stimme}: fehlgeschlagen ({e})")
+                continue
+            if not ton:
+                print(f"  {stimme}: diese Stimme gibt es nicht (mehr) - übersprungen")
+                os.remove(mp4)
+                continue
+            video.vorschaubild(D, os.path.join("videos", name + ".jpg"))
+            neu.append({"id": name, "datum": date.today().isoformat(), "ticker": stimme, "name": f"Stimme: {label}",
+                        "sprache": lang, "mp4": name + ".mp4", "bild": name + ".jpg",
+                        "text": f"Für aktien_config.yaml unter video: stimmen: {lang}: {stimme}",
+                        "frage": f"{lang}: {stimme}", "winkel": "stimmprobe", "dauer": round(dauer, 1), "ton": True,
+                        "demo": True, "erstellt": (jetzt - timedelta(seconds=i)).isoformat(timespec="seconds")})
+            print(f"  {stimme}: ok")
+    archiv_aktualisieren(neu, vcfg, demo=True)
+
+
 # ---------------------------------------------------------------- Auswahl
 
 def insider_fuer(ticker, name, mcap, cfg):
@@ -230,6 +276,7 @@ def main():
     ap.add_argument("--demo", nargs="?", const="us", help="Testvideo mit Beispieldaten: us, liste oder dax")
     ap.add_argument("--ticker", help="bestimmte Aktie erzwingen, z. B. NVDA oder SAP.DE")
     ap.add_argument("--modus", choices=["liste", "insider"], help="Modus für diesen Lauf")
+    ap.add_argument("--stimmprobe", action="store_true", help="Hörproben aller Stimmen erzeugen")
     args = ap.parse_args()
 
     import aktien
@@ -240,6 +287,10 @@ def main():
     monate = int(vcfg["chart_monate"])
     tage = int((cfg.get("insider") or {}).get("tage", 90))
     eigene = {str(t).upper() for t in vcfg.get("eigene_positionen") or []}
+
+    if args.stimmprobe:
+        stimmprobe(vcfg, monate, tage, modus)
+        return
 
     if args.demo:
         r, ins, preise, radar = demo_daten(monate, args.demo)

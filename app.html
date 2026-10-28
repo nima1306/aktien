@@ -74,6 +74,11 @@ dialog ol{margin:0;padding-left:20px;color:var(--muted);font-size:14px}
 dialog .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 #player{max-width:min(460px,96vw);background:#000}
 #player video{display:block;width:100%;max-height:86vh;background:#000}
+.views{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--panel);padding:5px;border-radius:14px;margin-bottom:18px}
+.views button{background:transparent;color:var(--muted);font-size:17px}
+.views button.on{background:var(--green);color:#06210f}
+.scan-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+#scanFrame{width:100%;height:calc(100vh - 230px);min-height:500px;border:1px solid var(--line);border-radius:var(--r);background:#fff}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);
 background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:650;opacity:0;transition:.2s;pointer-events:none;max-width:90vw;text-align:center}
 .toast.on{opacity:1}
@@ -86,9 +91,23 @@ a.link{color:var(--green)}
     <img src="icon-180.png" alt="">
     <h1>Aktien-Radar</h1>
     <span class="sp"></span>
-    <a class="btn ghost" href="../">Bericht</a>
     <button class="icon-btn ghost" id="setBtn" aria-label="Einstellungen">⚙︎</button>
   </header>
+
+  <nav class="views" id="views">
+    <button data-v="videos" class="on">🎬 Videos</button>
+    <button data-v="scanner">📊 Scanner</button>
+  </nav>
+
+  <section id="scannerView" hidden>
+    <div class="scan-bar">
+      <a class="btn ghost" href="../aktien_rangliste.xlsx" download>Excel-Tabelle</a>
+      <a class="btn ghost" href="../" target="_blank" rel="noopener">Im Browser öffnen</a>
+    </div>
+    <iframe id="scanFrame" title="Aktien-Scanner" loading="lazy"></iframe>
+  </section>
+
+  <div id="videoView">
 
   <section class="bot">
     <h2>Bot</h2>
@@ -96,6 +115,7 @@ a.link{color:var(--green)}
       <button class="primary" data-run="normal">Neue Videos jetzt</button>
       <button data-run="ticker">Für eine Aktie …</button>
       <button data-run="demo">Test-Video</button>
+      <button data-run="stimmen">Stimmen anhören</button>
     </div>
     <div class="runs" id="runs"></div>
     <p class="hint" id="botHint">Läuft automatisch Mo–Fr morgens. Zum Starten per Knopf einmal in den Einstellungen (⚙︎) einen GitHub-Schlüssel eintragen.</p>
@@ -108,6 +128,7 @@ a.link{color:var(--green)}
     <button data-f="offen">Noch nicht gepostet</button>
   </div>
   <div id="list"></div>
+  </div>
 </main>
 
 <dialog id="player"><video id="pv" controls playsinline></video></dialog>
@@ -263,7 +284,7 @@ async function starten(modus) {
     const info = await gh("");
     await gh(`/actions/workflows/${id}/dispatches`, { method: "POST",
       body: JSON.stringify({ ref: info.default_branch, inputs: { modus, ticker } }) });
-    toast(modus === "demo" ? "Test-Video gestartet (ca. 5 Min.)" : "Bot gestartet (ca. 20–30 Min.)", 3500);
+    toast(modus === "demo" ? "Test-Video gestartet (ca. 5 Min.)" : modus === "stimmen" ? "Hörproben werden erstellt (ca. 6 Min.)" : "Bot gestartet (ca. 20–30 Min.)", 3500);
     setTimeout(laeufe, 4000);
   } catch (e) { toast("Start fehlgeschlagen: " + e.message, 5000); }
 }
@@ -289,8 +310,30 @@ document.querySelectorAll("[data-run]").forEach(b => b.addEventListener("click",
 $("#setBtn").addEventListener("click", () => { $("#tok").value = cfg().tok; $("#repo").value = cfg().repo; $("#settings").showModal(); });
 $("#saveSet").addEventListener("click", () => { store.set("tok", $("#tok").value.trim()); store.set("repo", $("#repo").value.trim()); workflowId = null; setTimeout(laeufe, 100); });
 
+let view = store.get("view", "videos");
+function ansicht(v) {
+  view = v; store.set("view", v);
+  document.querySelectorAll("#views button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  $("#videoView").hidden = v !== "videos";
+  $("#scannerView").hidden = v !== "scanner";
+  if (v === "scanner" && !$("#scanFrame").src) $("#scanFrame").src = "../index.html?t=" + Date.now();
+}
+$("#views").addEventListener("click", e => { const b = e.target.closest("button"); if (b) ansicht(b.dataset.v); });
+ansicht(view);
+
 laden(); laeufe();
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { laden(); laeufe(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { let view = store.get("view", "videos");
+function ansicht(v) {
+  view = v; store.set("view", v);
+  document.querySelectorAll("#views button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  $("#videoView").hidden = v !== "videos";
+  $("#scannerView").hidden = v !== "scanner";
+  if (v === "scanner" && !$("#scanFrame").src) $("#scanFrame").src = "../index.html?t=" + Date.now();
+}
+$("#views").addEventListener("click", e => { const b = e.target.closest("button"); if (b) ansicht(b.dataset.v); });
+ansicht(view);
+
+laden(); laeufe(); } });
 </script>
 </body>
 </html>

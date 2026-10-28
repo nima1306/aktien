@@ -22,8 +22,8 @@ M = 64                                   # Seitenrand
 C = dict(bg=(9, 12, 17), panel=(20, 25, 32), panel2=(28, 34, 43), ink=(242, 244, 247), muted=(138, 148, 160),
          line=(44, 52, 63), green=(34, 197, 94), green_d=(20, 83, 45), red=(239, 68, 68), red_d=(60, 24, 24),
          gold=(250, 204, 21), blue=(96, 165, 250))
-ERSATZ_STIMMEN = {"de": ["de-DE-ConradNeural", "de-DE-KillianNeural", "de-DE-KatjaNeural"],
-                  "en": ["en-US-ChristopherNeural", "en-US-GuyNeural", "en-US-AriaNeural"]}
+ERSATZ_STIMMEN = {"de": ["de-DE-FlorianMultilingualNeural", "de-DE-ConradNeural", "de-DE-KillianNeural"],
+                  "en": ["en-US-AndrewMultilingualNeural", "en-US-ChristopherNeural", "en-US-GuyNeural"]}
 
 # ---------------------------------------------------------------- Schriften
 
@@ -169,9 +169,9 @@ def _wav_samples(path, sr):
 def sprechen(szenen, vcfg, lang, tmp, sr=24000):
     """Fügt jeder Szene 'audio' (numpy), 'sprech_dauer' und 'woerter' [(start, ende, wort)] hinzu.
     Gibt zurück, ob die Stimme funktioniert hat."""
-    stimmen = [vcfg.get("stimme")] + ERSATZ_STIMMEN.get(lang, [])
+    stimmen = [vcfg.get("stimme")] + (ERSATZ_STIMMEN.get(lang, []) if vcfg.get("ersatz", True) else [])
     stimmen = [s for i, s in enumerate(stimmen) if s and s not in stimmen[:i]]
-    rate = vcfg.get("tempo", "+10%")
+    rate = vcfg.get("tempo", "+5%")
     ton_ok = True
     for i, s in enumerate(szenen):
         a, words = None, []
