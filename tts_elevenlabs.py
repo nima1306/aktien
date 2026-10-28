@@ -56,7 +56,10 @@ def kontostatus():
     except requests.RequestException as e:
         return {"ok": False, "fehler": f"ElevenLabs nicht erreichbar ({e})"}
     if r.status_code == 401:
-        return {"ok": False, "fehler": "Schlüssel ungültig oder ohne Berechtigung 'User: Read' - neuen Schlüssel anlegen"}
+        if "permission" in r.text.lower():         # Schlüssel gültig, darf nur das Guthaben nicht lesen
+            return {"ok": True, "tarif": "?", "limit": None, "rest": None,
+                    "hinweis": "Schlüssel gültig, aber ohne Berechtigung 'User: Read' - Guthaben unbekannt"}
+        return {"ok": False, "fehler": f"Schlüssel ungültig - neu kopieren oder neuen anlegen ({r.text[:120]})"}
     if r.status_code != 200:
         return {"ok": False, "fehler": f"ElevenLabs antwortet mit {r.status_code}: {r.text[:120]}"}
     j = r.json()

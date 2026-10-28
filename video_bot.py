@@ -242,8 +242,11 @@ def eleven_proben(cfg, vcfg):
     st = el.kontostatus()
     if not st["ok"]:
         print(f"  NICHT OK: {st['fehler']}")
-        return []
-    print(f"  OK - Tarif {st['tarif']}, noch {st['rest']:,} von {st['limit']:,} Zeichen übrig".replace(",", "."))
+        return {}
+    if st.get("rest") is None:
+        print(f"  Hinweis: {st.get('hinweis', 'Guthaben unbekannt')} - teste die Stimmen trotzdem")
+    else:
+        print(f"  OK - Tarif {st['tarif']}, noch {st['rest']:,} von {st['limit']:,} Zeichen übrig".replace(",", "."))
     proben = {}                                   # (stimme, modell, sprache) -> wofür
     if vcfg.get("anbieter") == "elevenlabs":
         for lang in vcfg["sprachen"]:
