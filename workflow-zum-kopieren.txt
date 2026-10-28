@@ -1,0 +1,89 @@
+name: Aktien-Scanner
+
+on:
+  schedule:
+    - cron: "23 5 * * 1-5"   # Montag bis Freitag, ca. 6:30 Uhr deutscher Zeit
+  workflow_dispatch:          # per Knopf (GitHub oder App) startbar
+    inputs:
+      modus:
+        description: "normal = Scan + Videos, demo = nur schnelles Testvideo"
+        type: choice
+        options: [normal, demo]
+        default: normal
+      ticker:
+        description: "Optional: Video für diese Aktie (z. B. NVDA oder SAP.DE)"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      MODUS: ${{ inputs.modus || 'normal' }}
+      TICKER: ${{ inputs.ticker || '' }}
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Pakete installieren
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-inter fonts-dejavu-core
+      - name: Gedächtnis laden (Archiv, Verlauf, Insider-Meldungen, letzter Bericht)
+        uses: actions/cache@v4
+        with:
+          path: speicher
+          key: speicher-${{ github.run_id }}
+          restore-keys: speicher-
+      - name: Aktien bewerten
+        if: env.MODUS != 'demo'
+        env:
+          AKTIEN_THREADS: "3"
+        run: |
+          python aktien.py
+          mkdir -p speicher/bericht
+          cp aktien_bericht.html speicher/bericht/
+          cp aktien_rangliste.xlsx speicher/bericht/ 2>/dev/null || true
+      - name: Videos erstellen
+        env:
+          AKTIEN_THREADS: "3"
+        run: |
+          if [ "$MODUS" = "demo" ]; then python video_bot.py --demo
+          elif [ -n "$TICKER" ]; then python video_bot.py --ticker "$TICKER"
+          else python video_bot.py; fi
+        continue-on-error: true    # falls ein Video scheitert, wird der Bericht trotzdem veröffentlicht
+      - name: Webseite und App vorbereiten
+        run: |
+          mkdir -p site/app/videos
+          cp speicher/bericht/aktien_bericht.html site/index.html 2>/dev/null || echo "<p>Noch kein Bericht.</p>" > site/index.html
+          cp speicher/bericht/aktien_rangliste.xlsx site/ 2>/dev/null || true
+          cp icon.png site/
+          cp app.html site/app/index.html
+          cp app.webmanifest site/app/manifest.webmanifest
+          for s in 180 192 512; do cp app-icon-$s.png site/app/icon-$s.png; done
+          cp speicher/archiv/* site/app/videos/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: videos
+          path: videos
+          if-no-files-found: ignore
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

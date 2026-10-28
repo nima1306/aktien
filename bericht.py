@@ -208,6 +208,7 @@ td.c,th.c{{text-align:center;width:44px}}td.name{{white-space:normal;min-width:1
 .badge{{font-size:11px;padding:1px 7px;border-radius:10px;margin-right:4px}}.pos{{background:var(--g2)}}.neg{{background:var(--r2)}}.neu{{background:var(--line)}}
 </style></head><body><main>
 <h1>Aktien-Scanner</h1>
+<p><a href="app/"><b>Video-App öffnen →</b></a></p>
 <p class="muted">Stand {stand()} · {len(df)} Aktien bewertet · {' · '.join(E(i) for i in info)}</p>
 
 <div class="box notice"><b>Keine Anlageberatung.</b> Die Bewertung vergleicht Aktien nur untereinander und

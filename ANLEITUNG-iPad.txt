@@ -1,0 +1,32 @@
+AKTIEN-SCANNER AUFS IPAD - EINMALIGE EINRICHTUNG (ca. 20 Minuten, alles in Safari)
+
+1. Konto: github.com öffnen, "Sign up", kostenloses Konto anlegen.
+
+2. Projekt anlegen: oben rechts "+" -> "New repository"
+   - Name: aktien
+   - "Public" auswählen (für die kostenlose Webseite nötig)
+   - Haken bei "Add a README file"
+   - "Create repository"
+
+3. Webseite einschalten: im Projekt "Settings" -> links "Pages"
+   -> bei "Source" "GitHub Actions" auswählen.
+
+4. Dateien hochladen: zurück zum Projekt ("Code") -> "Add file" -> "Upload files"
+   -> "choose your files" -> in der Dateien-App diese 8 Dateien auswählen:
+      aktien.py, universum.py, daten.py, bewertung.py, bericht.py,
+      aktien_config.yaml, requirements.txt, icon.png
+   -> unten "Commit changes".
+
+5. Zeitplan anlegen: oben "Actions" -> "set up a workflow yourself"
+   -> den gesamten Inhalt im Editor löschen
+   -> den Inhalt von workflow-zum-kopieren.txt einfügen
+   -> oben rechts "Commit changes..." -> nochmal "Commit changes".
+
+6. Erster Start: "Actions" -> links "Aktien-Scanner" -> rechts "Run workflow"
+   -> grüner Knopf "Run workflow". Nach ca. 10-20 Minuten erscheint ein grüner Haken.
+
+7. Öffnen: https://DEIN-NAME.github.io/aktien/
+   In Safari: Teilen-Symbol -> "Zum Home-Bildschirm". Jetzt hast du ein App-Symbol.
+
+Ab jetzt aktualisiert sich der Bericht automatisch Montag bis Freitag gegen 6:30 Uhr.
+Gewichte ändern: im Projekt aktien_config.yaml antippen -> Stift-Symbol -> ändern -> Commit.

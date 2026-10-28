@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aktien-Radar</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Radar">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#090c11">
+<style>
+:root{--bg:#090c11;--panel:#141920;--panel2:#1c222b;--line:#2a323d;--ink:#f2f4f7;--muted:#8a94a0;
+--green:#22c55e;--green-d:#14532d;--red:#ef4444;--gold:#facc15;--blue:#60a5fa;--r:16px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 80px}
+header{display:flex;align-items:center;gap:12px;margin:6px 0 18px}
+header img{width:44px;height:44px;border-radius:11px}
+header h1{font-size:24px;margin:0;letter-spacing:-.01em;white-space:nowrap}
+@media(max-width:420px){header h1{font-size:20px}header img{width:36px;height:36px}}
+header .sp{flex:1}
+button,.btn{font:inherit;font-weight:650;border:0;border-radius:12px;padding:11px 15px;cursor:pointer;
+background:var(--panel2);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;gap:7px;
+text-decoration:none;min-height:44px}
+button:active,.btn:active{transform:scale(.97)}
+button.primary{background:var(--green);color:#06210f}
+button.ghost{background:transparent;border:1px solid var(--line)}
+button:disabled{opacity:.5}
+.icon-btn{width:44px;padding:0}
+.tabs{display:flex;gap:6px;background:var(--panel);padding:5px;border-radius:14px;margin-bottom:16px;width:max-content;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.tabs button{background:transparent;min-height:38px;padding:7px 14px;color:var(--muted);white-space:nowrap;flex:none}
+.tabs button.on{background:var(--panel2);color:var(--ink)}
+.bot{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:22px}
+.bot h2{font-size:15px;margin:0 0 10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.bot .row{display:flex;gap:8px;flex-wrap:wrap}
+.runs{margin-top:12px;display:grid;gap:6px;font-size:14px}
+.run{display:flex;align-items:center;gap:10px;color:var(--muted)}
+.run a{color:var(--ink);text-decoration:none}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--muted)}
+.dot.ok{background:var(--green)}.dot.err{background:var(--red)}.dot.busy{background:var(--gold);animation:p 1s infinite}
+@keyframes p{50%{opacity:.3}}
+.hint{font-size:14px;color:var(--muted);margin:8px 0 0}
+.day{font-size:14px;color:var(--muted);margin:22px 0 10px;font-weight:650;letter-spacing:.02em}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
+.card.posted{opacity:.6}
+.thumb{position:relative;aspect-ratio:9/16;max-height:400px;background:#000 50% 32%/cover no-repeat;cursor:pointer}
+.thumb .play{position:absolute;inset:0;margin:auto;width:74px;height:74px;border-radius:50%;background:rgba(9,12,17,.7);
+display:flex;align-items:center;justify-content:center}
+.thumb .play::after{content:"";border-left:24px solid var(--ink);border-top:15px solid transparent;border-bottom:15px solid transparent;margin-left:6px}
+.badges{position:absolute;left:10px;bottom:10px;display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-size:12px;font-weight:750;padding:4px 9px;border-radius:999px;background:rgba(9,12,17,.85)}
+.badge.lang{background:var(--ink);color:var(--bg)}.badge.demo{background:var(--blue);color:var(--bg)}
+.badge.warn{background:var(--red)}.badge.ok{background:var(--green);color:var(--bg)}
+.body{padding:14px;display:flex;flex-direction:column;gap:10px;flex:1}
+.title{font-weight:750;font-size:18px}.title span{color:var(--muted);font-weight:600;font-size:15px}
+.q{color:var(--muted);font-size:15px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto}
+.actions .wide{grid-column:1/-1}
+label.chk{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;cursor:pointer;min-height:44px}
+label.chk input{width:22px;height:22px;accent-color:var(--green)}
+.empty{text-align:center;color:var(--muted);padding:50px 10px}
+dialog{border:0;border-radius:20px;background:var(--panel);color:var(--ink);padding:0;max-width:min(560px,94vw);width:100%}
+dialog::backdrop{background:rgba(0,0,0,.7)}
+dialog .in{padding:20px;display:grid;gap:12px}
+dialog h3{margin:0;font-size:20px}
+dialog input{font:inherit;width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+dialog ol{margin:0;padding-left:20px;color:var(--muted);font-size:14px}
+dialog .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+#player{max-width:min(460px,96vw);background:#000}
+#player video{display:block;width:100%;max-height:86vh;background:#000}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);
+background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:650;opacity:0;transition:.2s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{opacity:1}
+a.link{color:var(--green)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icon-180.png" alt="">
+    <h1>Aktien-Radar</h1>
+    <span class="sp"></span>
+    <a class="btn ghost" href="../">Bericht</a>
+    <button class="icon-btn ghost" id="setBtn" aria-label="Einstellungen">⚙︎</button>
+  </header>
+
+  <section class="bot">
+    <h2>Bot</h2>
+    <div class="row">
+      <button class="primary" data-run="normal">Neue Videos jetzt</button>
+      <button data-run="ticker">Für eine Aktie …</button>
+      <button data-run="demo">Test-Video</button>
+    </div>
+    <div class="runs" id="runs"></div>
+    <p class="hint" id="botHint">Läuft automatisch Mo–Fr morgens. Zum Starten per Knopf einmal in den Einstellungen (⚙︎) einen GitHub-Schlüssel eintragen.</p>
+  </section>
+
+  <div class="tabs" id="tabs">
+    <button data-f="alle" class="on">Alle</button>
+    <button data-f="de">🇩🇪 Deutsch</button>
+    <button data-f="en">🇺🇸 English</button>
+    <button data-f="offen">Noch nicht gepostet</button>
+  </div>
+  <div id="list"></div>
+</main>
+
+<dialog id="player"><video id="pv" controls playsinline></video></dialog>
+
+<dialog id="settings"><form method="dialog" class="in">
+  <h3>Bot per Knopf starten</h3>
+  <ol>
+    <li>Auf github.com: Profilbild → Settings → Developer settings → Personal access tokens → <b>Fine-grained tokens</b> → Generate new token.</li>
+    <li>Repository access: <b>Only select repositories</b> → dein Aktien-Projekt.</li>
+    <li>Permissions → Repository permissions → <b>Actions: Read and write</b>. Erstellen und den Schlüssel hier einfügen.</li>
+  </ol>
+  <input id="tok" type="password" placeholder="github_pat_…" autocomplete="off">
+  <input id="repo" placeholder="dein-name/aktien">
+  <p class="hint">Der Schlüssel bleibt nur auf diesem Gerät gespeichert und kann nur Abläufe in diesem einen Projekt starten.</p>
+  <div class="row"><button value="cancel" class="ghost">Abbrechen</button><button value="ok" class="primary" id="saveSet">Speichern</button></div>
+</form></dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+let videos = [], filter = store.get("filter", "alle");
+const blobs = {};
+
+function toast(t, ms = 2600) { const el = $("#toast"); el.textContent = t; el.classList.add("on"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("on"), ms); }
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function tagLabel(iso) {
+  const d = new Date(iso + "T12:00:00"), h = new Date(); h.setHours(12, 0, 0, 0);
+  const diff = Math.round((h - d) / 864e5);
+  if (diff === 0) return "Heute"; if (diff === 1) return "Gestern";
+  return d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+}
+const posted = id => !!store.get("posted", {})[id];
+function setPosted(id, v) { const p = store.get("posted", {}); if (v) p[id] = Date.now(); else delete p[id]; store.set("posted", p); }
+
+async function laden() {
+  try {
+    const r = await fetch("videos/videos.json?t=" + Date.now());
+    videos = r.ok ? await r.json() : [];
+  } catch (e) { videos = []; }
+  zeigen();
+}
+
+function zeigen() {
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.f === filter));
+  let v = videos.filter(x => filter === "alle" || (filter === "offen" ? !posted(x.id) : x.sprache === filter));
+  if (!v.length) { $("#list").innerHTML = `<div class="empty">${videos.length ? "Hier ist gerade nichts." : "Noch keine Videos. Starte oben einen Lauf oder warte auf den nächsten Morgen."}</div>`; return; }
+  const tage = {};
+  v.forEach(x => (tage[x.datum] ||= []).push(x));
+  $("#list").innerHTML = Object.keys(tage).sort().reverse().map(d => `
+    <div class="day">${tagLabel(d)}</div>
+    <div class="grid">${tage[d].map(karte).join("")}</div>`).join("");
+}
+
+function karte(x) {
+  const p = posted(x.id);
+  return `<article class="card ${p ? "posted" : ""}" data-id="${esc(x.id)}">
+    <div class="thumb" style="background-image:url('videos/${esc(x.bild)}')" data-act="play">
+      <div class="badges"><span class="badge lang">${x.sprache === "de" ? "DE" : "EN"}</span>
+        ${x.demo ? '<span class="badge demo">DEMO</span>' : ""}
+        ${x.ton === false ? '<span class="badge warn">ohne Ton</span>' : ""}
+        ${p ? '<span class="badge ok">gepostet</span>' : ""}</div>
+      <div class="play"></div>
+    </div>
+    <div class="body">
+      <div class="title">${esc(x.name)} <span>${esc(x.ticker)} · ${Math.round(x.dauer)} s</span></div>
+      <div class="q">${esc(x.frage || "")}</div>
+      <div class="actions">
+        <button class="primary wide" data-act="share">${blobs[x.id] ? "Jetzt an TikTok teilen" : "An TikTok teilen"}</button>
+        <button data-act="copy">Text kopieren</button>
+        <a class="btn" href="videos/${esc(x.mp4)}" download>Laden</a>
+        <label class="chk wide"><input type="checkbox" data-act="posted" ${p ? "checked" : ""}> Gepostet</label>
+      </div>
+    </div></article>`;
+}
+
+async function kopieren(x) {
+  try { await navigator.clipboard.writeText(x.text); return true; }
+  catch (e) { const t = document.createElement("textarea"); t.value = x.text; document.body.appendChild(t); t.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch (e2) {} t.remove(); return ok; }
+}
+
+async function teilen(x, btn) {
+  // iOS erlaubt "Teilen" nur direkt nach einem Tippen. Großes Video daher erst laden, dann nochmal tippen.
+  if (!blobs[x.id]) {
+    btn.disabled = true; btn.textContent = "Video wird geladen …";
+    try {
+      const r = await fetch("videos/" + x.mp4);
+      blobs[x.id] = new File([await r.blob()], x.mp4, { type: "video/mp4" });
+      btn.textContent = "Jetzt an TikTok teilen"; toast("Bereit. Noch einmal tippen zum Teilen.");
+    } catch (e) { btn.textContent = "An TikTok teilen"; toast("Laden fehlgeschlagen"); }
+    btn.disabled = false; return;
+  }
+  const ok = await kopieren(x);
+  const file = blobs[x.id];
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); toast(ok ? "Beschreibung ist kopiert – in TikTok einfügen." : "Geteilt."); }
+    catch (e) { if (e.name !== "AbortError") toast("Teilen nicht möglich – bitte „Laden“ nutzen."); }
+  } else {
+    toast("Teilen wird hier nicht unterstützt – bitte „Laden“ nutzen.");
+  }
+}
+
+$("#list").addEventListener("click", async e => {
+  const el = e.target.closest("[data-act]"); if (!el) return;
+  const id = el.closest(".card").dataset.id, x = videos.find(v => v.id === id);
+  const act = el.dataset.act;
+  if (act === "play") { const pv = $("#pv"); pv.src = "videos/" + x.mp4; $("#player").showModal(); pv.play().catch(() => {}); }
+  if (act === "copy") toast((await kopieren(x)) ? "Beschreibung kopiert" : "Kopieren nicht möglich");
+  if (act === "share") teilen(x, el);
+  if (act === "posted") { setPosted(id, el.checked); zeigen(); }
+});
+$("#player").addEventListener("click", e => { if (e.target.id === "player") { $("#pv").pause(); $("#player").close(); } });
+$("#player").addEventListener("close", () => $("#pv").pause());
+$("#tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; filter = b.dataset.f; store.set("filter", filter); zeigen(); });
+
+// ---------------- Bot steuern über die GitHub-API ----------------
+function repoVermuten() {
+  const h = location.hostname.match(/^([^.]+)\.github\.io$/);
+  const seg = location.pathname.split("/").filter(Boolean)[0];
+  return h && seg && seg !== "app" ? `${h[1]}/${seg}` : "";
+}
+const cfg = () => ({ tok: store.get("tok", ""), repo: store.get("repo", "") || repoVermuten() });
+async function gh(pfad, opt = {}) {
+  const { tok, repo } = cfg();
+  const r = await fetch(`https://api.github.com/repos/${repo}${pfad}`, { ...opt,
+    headers: { "Accept": "application/vnd.github+json", "Authorization": "Bearer " + tok, ...(opt.headers || {}) } });
+  if (!r.ok && r.status !== 204) throw new Error(r.status + " " + (await r.text()).slice(0, 120));
+  return r.status === 204 ? null : r.json();
+}
+let workflowId = null, pollTimer = null, warLaufend = false;
+async function workflowFinden() {
+  if (workflowId) return workflowId;
+  const w = await gh("/actions/workflows");
+  const f = w.workflows.find(x => /aktien/i.test(x.name)) || w.workflows[0];
+  if (!f) throw new Error("Kein Workflow gefunden");
+  return (workflowId = f.id);
+}
+async function starten(modus) {
+  const { tok, repo } = cfg();
+  if (!tok || !repo) { $("#settings").showModal(); return; }
+  let ticker = "";
+  if (modus === "ticker") {
+    ticker = (prompt("Ticker wie bei Yahoo Finance, z. B. NVDA, AAPL oder SAP.DE") || "").trim().toUpperCase();
+    if (!ticker) return; modus = "normal";
+  }
+  try {
+    const id = await workflowFinden();
+    const info = await gh("");
+    await gh(`/actions/workflows/${id}/dispatches`, { method: "POST",
+      body: JSON.stringify({ ref: info.default_branch, inputs: { modus, ticker } }) });
+    toast(modus === "demo" ? "Test-Video gestartet (ca. 5 Min.)" : "Bot gestartet (ca. 20–30 Min.)", 3500);
+    setTimeout(laeufe, 4000);
+  } catch (e) { toast("Start fehlgeschlagen: " + e.message, 5000); }
+}
+async function laeufe() {
+  const { tok, repo } = cfg();
+  if (!tok || !repo) return;
+  try {
+    const r = await gh("/actions/runs?per_page=4");
+    const laufend = r.workflow_runs.some(x => x.status !== "completed");
+    $("#runs").innerHTML = r.workflow_runs.map(x => {
+      const cls = x.status !== "completed" ? "busy" : x.conclusion === "success" ? "ok" : "err";
+      const txt = x.status !== "completed" ? "läuft …" : x.conclusion === "success" ? "fertig" : "Fehler";
+      const wann = new Date(x.created_at).toLocaleString("de-DE", { weekday: "short", hour: "2-digit", minute: "2-digit" });
+      return `<div class="run"><span class="dot ${cls}"></span><a href="${x.html_url}" target="_blank" rel="noopener">${esc(x.display_title || x.name)}</a><span>${wann} · ${txt}</span></div>`;
+    }).join("");
+    $("#botHint").style.display = "none";
+    if (warLaufend && !laufend) { toast("Lauf fertig – Videos werden geladen", 3000); setTimeout(laden, 60000); laden(); }
+    warLaufend = laufend;
+    clearTimeout(pollTimer); pollTimer = setTimeout(laeufe, laufend ? 15000 : 120000);
+  } catch (e) { $("#runs").innerHTML = `<div class="run"><span class="dot err"></span>GitHub nicht erreichbar: ${esc(e.message)}</div>`; }
+}
+document.querySelectorAll("[data-run]").forEach(b => b.addEventListener("click", () => starten(b.dataset.run)));
+$("#setBtn").addEventListener("click", () => { $("#tok").value = cfg().tok; $("#repo").value = cfg().repo; $("#settings").showModal(); });
+$("#saveSet").addEventListener("click", () => { store.set("tok", $("#tok").value.trim()); store.set("repo", $("#repo").value.trim()); workflowId = null; setTimeout(laeufe, 100); });
+
+laden(); laeufe();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { laden(); laeufe(); } });
+</script>
+</body>
+</html>

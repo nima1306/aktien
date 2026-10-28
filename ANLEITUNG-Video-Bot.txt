@@ -1,0 +1,114 @@
+VIDEO-BOT + APP - SO WIRD ER EINSATZBEREIT (ca. 15 Minuten, alles in Safari auf dem iPad)
+=========================================================================================
+
+Was er macht
+------------
+Jeden Morgen (Mo-Fr) bewertet der Scanner alle Aktien. Danach nimmt der Bot die nächste Aktie aus
+deiner Rangliste, die noch kein Video hat, und baut daraus ZWEI Videos: Deutsch und Englisch,
+gleicher Inhalt, über 60 Sekunden, mit KI-Stimme und Untertiteln. Gibt es Insiderkäufe
+(USA: SEC, Deutschland: BaFin) oder Reddit-/StockTwits-Daten, kommen sie automatisch mit ins Video.
+Alle Videos landen in deiner App: https://DEIN-NAME.github.io/aktien/app/
+
+Hinweis zum Ton: Die Stimme entsteht erst auf GitHub (dort gibt es Internet für den Sprachdienst).
+Hat ein Video keinen Ton, zeigt die App ein rotes Schild "ohne Ton".
+
+
+SCHRITT 1 - Dateien hochladen
+-----------------------------
+Im Projekt: "Add file" -> "Upload files" -> diese Dateien auswählen (alle liegen im Hauptordner):
+   aktien.py, bericht.py, bewertung.py, daten.py, universum.py,
+   insider.py, bafin.py, stimmung.py, sprache.py, skript.py, video.py, video_bot.py,
+   aktien_config.yaml, requirements.txt, icon.png,
+   app.html, app.webmanifest, app-icon-180.png, app-icon-192.png, app-icon-512.png
+-> "Commit changes". Vorhandene Dateien werden dabei ersetzt.
+
+SCHRITT 2 - Einstellungen
+-------------------------
+aktien_config.yaml antippen -> Stift-Symbol:
+ - insider: sec_kontakt -> deinen Namen und deine E-Mail eintragen (Pflicht bei der SEC).
+ - video: eigene_positionen -> Aktien eintragen, die du selbst besitzt, z. B. [AAPL, SAP.DE].
+   Dann zeigt und sagt das Video "Offenlegung: Ich besitze diese Aktie" (wichtig, siehe unten).
+-> Commit.
+
+SCHRITT 3 - Workflow ersetzen
+-----------------------------
+Ordner .github/workflows -> die Workflow-Datei öffnen -> Stift -> alles löschen ->
+Inhalt von workflow-zum-kopieren.txt einfügen -> Commit.
+
+SCHRITT 4 - Ton testen (ca. 5 Minuten)
+--------------------------------------
+"Actions" -> "Aktien-Scanner" -> "Run workflow" -> bei modus "demo" wählen -> "Run workflow".
+Nach dem grünen Haken die App öffnen: https://DEIN-NAME.github.io/aktien/app/
+Dort liegen zwei Test-Videos (DE + EN, markiert mit DEMO). Abspielen und Ton prüfen.
+Demo-Videos verschwinden beim nächsten normalen Lauf automatisch.
+
+SCHRITT 5 - App aufs iPad
+-------------------------
+App-Adresse in Safari öffnen -> Teilen-Symbol -> "Zum Home-Bildschirm". Fertig.
+
+SCHRITT 6 - Bot per Knopf starten (optional, aber praktisch)
+-----------------------------------------------------------
+In der App auf ⚙︎ tippen und der Anleitung dort folgen (GitHub-Schlüssel mit dem Recht
+"Actions: Read and write" nur für dieses Projekt). Danach gehen die Knöpfe
+"Neue Videos jetzt", "Für eine Aktie ..." und "Test-Video", und die App zeigt, ob ein Lauf läuft.
+
+SCHRITT 7 - Erster echter Lauf
+------------------------------
+In der App "Neue Videos jetzt" (oder in GitHub "Run workflow" mit modus normal). Dauert ca. 20-30
+Minuten, weil vorher der ganze Scan läuft. Danach erscheinen zwei Videos unter "Heute".
+
+
+TÄGLICHER ABLAUF (2 Minuten)
+----------------------------
+1. App öffnen -> Video ansehen (kurz prüfen, ob Zahlen plausibel sind).
+2. "An TikTok teilen" tippen (beim ersten Mal lädt das Video, dann nochmal tippen).
+   Die Beschreibung mit Hashtags ist dabei automatisch kopiert.
+3. In TikTok das richtige Konto wählen (DE-Video -> deutsches Konto, EN-Video -> englisches Konto),
+   Beschreibung einfügen, unter "Weitere Optionen" den Hinweis "KI-generierte Inhalte" einschalten,
+   posten.
+4. In der App den Haken "Gepostet" setzen. Filter "Noch nicht gepostet" zeigt, was offen ist.
+
+
+ZWEI TIKTOK-KONTEN
+------------------
+ - In der TikTok-App: Profil -> Name oben antippen -> "Konto hinzufügen". So wechselst du schnell.
+ - Für das Creator-Rewards-Programm (Geld für Videos) braucht JEDES Konto: mind. 18 Jahre,
+   10.000 Follower, 100.000 Aufrufe in den letzten 30 Tagen, persönliches Konto (kein Business-Konto),
+   Videos über 1 Minute, eigene Inhalte. Deutschland ist ein zugelassenes Land.
+   TikTok ändert diese Regeln öfter - vor dem Antrag im Creator-Center nachsehen.
+ - Am Anfang ist regelmäßiges Posten wichtiger als Perfektion: täglich, ähnliche Uhrzeit.
+
+
+RECHTLICHES (kurz, keine Rechtsberatung)
+----------------------------------------
+ - "Keine Anlageberatung" steht in jedem Video und in jeder Beschreibung. Nicht entfernen.
+ - Wer regelmäßig Aktien öffentlich bewertet, muss Interessenkonflikte offenlegen. Wenn du eine
+   Aktie besitzt: in eigene_positionen eintragen, dann macht das Video das automatisch.
+ - Nie Kursgewinne versprechen und keine Aktie besprechen, die du gerade selbst verkaufen willst.
+
+
+WAS DER BOT (NOCH) NICHT KANN
+-----------------------------
+ - Selbst bei TikTok hochladen: TikTok erlaubt automatisches Posten nur für geprüfte Entwickler-Apps,
+   ungeprüfte Uploads bleiben privat. Deshalb der Teilen-Knopf: ein Tippen statt Automatik.
+ - BaFin und StockTwits haben keine offizielle Schnittstelle. Fallen sie aus, läuft der Bot ohne
+   diese Daten weiter. Steht im Log "BaFin: Spalten nicht erkannt", die Zeile an Claude schicken.
+
+
+EINSTELLUNGEN (aktien_config.yaml, Abschnitt video:)
+----------------------------------------------------
+ modus: liste      jeden Tag die nächste Aktie der Rangliste (Standard)
+ modus: insider    jeden Tag die stärkste Insider-Story
+ anzahl: 1         Aktien pro Tag
+ sprachen: [de, en]
+ stimmen / tempo   Stimme und Sprechtempo je Sprache
+ liste_top: 150    so tief geht er in die Rangliste
+ liste_filter      "alle" oder "ohne_warnungen"
+ musik: musik.mp3  eine lizenzfreie Datei hochladen, läuft leise unter der Stimme
+
+
+WENN ETWAS NICHT KLAPPT
+-----------------------
+ - Kein Video: Actions -> letzten Lauf öffnen -> Schritt "Videos erstellen" ansehen.
+ - "ohne Ton": im Log nach "Stimme nicht verfügbar" suchen. Meist hilft ein neuer Lauf.
+ - App leer: erst einen Lauf abwarten. Danach in der App nach unten ziehen bzw. neu öffnen.

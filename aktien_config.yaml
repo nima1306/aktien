@@ -28,3 +28,46 @@ filter:
 bericht:
   top: 30                           # so viele Aktien bekommen eine Detailkarte
   nachrichten_pro_aktie: 5
+
+# ===== Insider-Daten (US: SEC Form 4, Deutschland: BaFin) =====
+insider:
+  sec_kontakt: "Vorname Nachname deine@mail.de"   # PFLICHT: die SEC verlangt Name + E-Mail im Abruf
+  tage: 90                                        # Käufe der letzten X Tage
+  max_aktien: 600                                 # so viele US-Aktien werden geprüft
+
+# ===== Video-Bot =====
+video:
+  modus: liste              # liste = jeden Tag die nächste Aktie aus der Rangliste
+                            # insider = jeden Tag die stärkste Insider-Story
+  anzahl: 1                 # Aktien pro Tag (jede Aktie gibt ein Video pro Sprache)
+  sprachen: [de, en]        # zwei Accounts: dieselben Videos auf Deutsch und Englisch
+  stimmen:
+    de: de-DE-ConradNeural       # Alternativen: de-DE-KillianNeural, de-DE-KatjaNeural (weiblich)
+    en: en-US-ChristopherNeural  # Alternativen: en-US-GuyNeural, en-US-AriaNeural (weiblich)
+  tempo: "+10%"             # Sprechtempo (TikTok mag es zügig)
+  min_sekunden: 61.5        # TikTok zahlt nur für Videos über 1 Minute
+  chart_monate: 6
+  musik: musik.mp3          # optional: lizenzfreie Musik als musik.mp3 hochladen, sonst ohne Musik
+  musik_lautstaerke: 0.12
+  eigene_positionen: []     # Aktien, die du selbst besitzt, z. B. [AAPL, SAP.DE] -> Offenlegung im Video
+
+  # nur Listen-Modus
+  liste_top: 150            # die besten X der Rangliste werden nacheinander abgearbeitet
+  liste_filter: alle        # oder: ohne_warnungen
+  wiederholen_nach_tagen: 180
+
+  # nur Insider-Modus
+  min_kaufsumme: 100000     # nur Aktien, bei denen Insider für mind. so viel gekauft haben
+  gewicht_scanner: 0.4
+  gewicht_insider: 0.6
+  gewicht_stimmung: 0.1
+  sperre_tage: 14
+
+  archiv_tage: 10           # so lange bleiben Videos in der App
+
+# ===== Sentiment-Radar und deutsche Insider =====
+stimmung:
+  aktiv: true               # Szene "Was sagt das Netz?" im Video
+  reddit: true              # Reddit-Erwähnungen über ApeWisdom (US-Aktien)
+  stocktwits: true          # Bullish/Bearish-Anteil auf StockTwits (US-Aktien)
+  bafin: true               # Insiderkäufe deutscher Aktien aus der BaFin-Datenbank

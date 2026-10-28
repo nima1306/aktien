@@ -6,3 +6,5 @@ requests
 lxml
 openpyxl
 tzdata
+pillow>=10.0
+edge-tts>=7.0
