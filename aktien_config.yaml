@@ -104,7 +104,7 @@ themen:
     sprachen: [de, en]
     anbieter: elevenlabs    # elevenlabs (Abo) oder edge (kostenlos)
     eleven_stimme:
-      de: brian             # tiefe Erzählerstimme; eigene deutsche Stimme: Voice-ID hier eintragen
+      de: ML23UVoFL5mI6APbRAeR         # tiefe Erzählerstimme; eigene deutsche Stimme: Voice-ID hier eintragen
       en: brian
     eleven_modell: eleven_multilingual_v2   # beste Betonung (doppelter Verbrauch) - lohnt sich hier
     eleven_tempo: 0.95      # 0.7 bis 1.2 (etwas ruhiger wirkt hochwertiger)
