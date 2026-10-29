@@ -74,9 +74,9 @@ def verbrauchen(n):
 
 
 def sprechen(text, stimme, mp3_pfad, modell="eleven_multilingual_v2", tempo=1.0, einstellungen=None,
-             vorher=None, nachher=None, sprache=None):
+             vorher=None, nachher=None, sprache=None, roh=False):
     """Erzeugt die Audiodatei und gibt Wortzeiten [(start, ende, wort)] zurück."""
-    st = {"stability": 0.45, "similarity_boost": 0.8, "style": 0.25, "use_speaker_boost": True}
+    st = {"stability": 0.4, "similarity_boost": 0.8, "style": 0.3, "use_speaker_boost": True}
     st.update(einstellungen or {})
     st["speed"] = max(0.7, min(1.2, float(tempo)))
     body = {"text": text, "model_id": modell, "voice_settings": st}
@@ -84,7 +84,7 @@ def sprechen(text, stimme, mp3_pfad, modell="eleven_multilingual_v2", tempo=1.0,
         body["previous_text"] = vorher[-400:]                  # sorgt für natürlichen Übergang zwischen Szenen
     if nachher:
         body["next_text"] = nachher[:400]
-    if sprache:
+    if sprache and ("flash" in modell or "turbo" in modell):   # Sprache festlegen (nur diese Modelle)
         body["language_code"] = sprache
     r = requests.post(f"{API}/text-to-speech/{stimmen_id(stimme)}/with-timestamps",
                       params={"output_format": "mp3_44100_128"}, json=body, timeout=120,
@@ -96,8 +96,11 @@ def sprechen(text, stimme, mp3_pfad, modell="eleven_multilingual_v2", tempo=1.0,
         f.write(base64.b64decode(j["audio_base64"]))
     verbrauchen(len(text))
     al = j.get("alignment") or j.get("normalized_alignment") or {}
-    return woerter_aus_zeichen(al.get("characters") or [], al.get("character_start_times_seconds") or [],
-                               al.get("character_end_times_seconds") or [])
+    zeichen = (al.get("characters") or [], al.get("character_start_times_seconds") or [],
+               al.get("character_end_times_seconds") or [])
+    if roh:
+        return zeichen
+    return woerter_aus_zeichen(*zeichen)
 
 
 def woerter_aus_zeichen(zeichen, starts, enden):

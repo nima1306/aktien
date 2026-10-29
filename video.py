@@ -174,42 +174,81 @@ def _pct(t, default=0):
 
 
 def sprechen_eleven(szenen, vcfg, lang, tmp, sr):
-    """ElevenLabs für alle Szenen. Gibt True zurück, wenn alles geklappt hat (sonst Rückfall auf Gratis-Stimme)."""
+    """ElevenLabs für alle Szenen. Gibt True zurück, wenn alles geklappt hat (sonst Rückfall auf Gratis-Stimme).
+    Der ganze Text wird in einem Stück gesprochen (natürlicher Fluss und Betonung über die Szenen hinweg)
+    und danach an den Szenengrenzen geschnitten. Zahlen werden vorher ausgeschrieben (aussprache.py)."""
+    import aussprache
     import tts_elevenlabs as el
     if not el.schluessel():
         print("  ElevenLabs: kein Schlüssel (GitHub-Secret ELEVENLABS_API_KEY) -> kostenlose Stimme.")
         return False
-    bedarf = sum(len(s["text"]) for s in szenen)
+    paare = [aussprache.vorlesen(s["text"], lang) for s in szenen]
+    texte = [" ".join(g for _, g in p) for p in paare]
+    bedarf = sum(len(t) for t in texte)
     rest = el.restguthaben()
     if rest is not None and rest < bedarf:
         print(f"  ElevenLabs: Guthaben reicht nicht ({rest} Zeichen übrig, {bedarf} nötig) -> kostenlose Stimme.")
         return False
     tempo = float(vcfg.get("eleven_tempo", 1.0)) + (_pct(vcfg.get("tempo")) - _pct(vcfg.get("tempo_grund"),
                                                                                     _pct(vcfg.get("tempo")))) / 100
+    arg = dict(modell=vcfg.get("eleven_modell", "eleven_multilingual_v2"), tempo=tempo,
+               einstellungen=vcfg.get("eleven_einstellungen"), sprache=lang)
+    stimme = vcfg.get("eleven_stimme") or "brian"
     try:
-        ergebnisse = []
-        for i, s in enumerate(szenen):
-            mp3 = os.path.join(tmp, f"el_{lang}{i}.mp3")
-            woerter = el.sprechen(s["text"], vcfg.get("eleven_stimme") or "brian", mp3,
-                                  modell=vcfg.get("eleven_modell", "eleven_multilingual_v2"), tempo=tempo,
-                                  einstellungen=vcfg.get("eleven_einstellungen"),
-                                  vorher=szenen[i - 1]["text"] if i else None,
-                                  nachher=szenen[i + 1]["text"] if i + 1 < len(szenen) else None)
-            a = _wav_samples(mp3, sr)
-            if len(a) < sr * 0.3:
-                raise RuntimeError("leere Audiodatei")
-            dur = len(a) / sr
+        ergebnisse = None
+        if vcfg.get("eleven_am_stueck", True) and len(szenen) > 1:
+            ergebnisse = _eleven_am_stueck(el, texte, stimme, arg, tmp, lang, sr)
+        if ergebnisse is None:                                          # Szene für Szene
+            ergebnisse = []
+            for i, t in enumerate(texte):
+                mp3 = os.path.join(tmp, f"el_{lang}{i}.mp3")
+                woerter = el.sprechen(t, stimme, mp3, vorher=texte[i - 1] if i else None,
+                                      nachher=texte[i + 1] if i + 1 < len(texte) else None, **arg)
+                a = _wav_samples(mp3, sr)
+                if len(a) < sr * 0.3:
+                    raise RuntimeError("leere Audiodatei")
+                ergebnisse.append((a, len(a) / sr, woerter))
+        for s, p, t, (a, dur, woerter) in zip(szenen, paare, texte, ergebnisse):
             if not woerter:
-                ws = s["text"].split()
+                ws = t.split()
                 woerter = [(k * dur / len(ws), (k + 1) * dur / len(ws), w) for k, w in enumerate(ws)]
-            ergebnisse.append((a, dur, woerter))
-        for s, (a, dur, woerter) in zip(szenen, ergebnisse):
-            s.update(audio=a, sprech_dauer=dur, woerter=woerter)
+            s.update(audio=a, sprech_dauer=dur, woerter=aussprache.untertitel(p, woerter))
         print(f"  [{lang}] ElevenLabs-Stimme ({bedarf} Zeichen)")
         return True
     except Exception as e:
         print(f"  ElevenLabs nicht verfügbar ({str(e)[:120]}) -> kostenlose Stimme.")
         return False
+
+
+def _eleven_am_stueck(el, texte, stimme, arg, tmp, lang, sr):
+    """Ein Aufruf für alle Szenen, danach Schnitt in der Pause zwischen zwei Szenen.
+    Gibt None zurück, wenn die Zeitangaben nicht zum Text passen (dann Szene für Szene)."""
+    trenner = "\n\n"
+    voll = trenner.join(texte)
+    mp3 = os.path.join(tmp, f"el_{lang}_voll.mp3")
+    zeichen, starts, enden = el.sprechen(voll, stimme, mp3, roh=True, **arg)
+    if len(zeichen) != len(voll) or not starts:
+        print("  ElevenLabs: Zeitangaben passen nicht zum Text -> Szene für Szene.")
+        return None
+    a = _wav_samples(mp3, sr)
+    gesamt = len(a) / sr
+    bereiche, pos = [], 0
+    for t in texte:
+        bereiche.append((pos, pos + len(t)))
+        pos += len(t) + len(trenner)
+    erste = [min((starts[k] for k in range(b0, b1) if not zeichen[k].isspace()), default=None) for b0, b1 in bereiche]
+    letzte = [max((enden[k] for k in range(b0, b1) if not zeichen[k].isspace()), default=None) for b0, b1 in bereiche]
+    if None in erste or None in letzte:
+        return None
+    schnitte = [0.0] + [(letzte[i] + erste[i + 1]) / 2 for i in range(len(texte) - 1)] + [gesamt]
+    out = []
+    for i, (b0, b1) in enumerate(bereiche):
+        t0, t1 = schnitte[i], schnitte[i + 1]
+        stueck = a[int(t0 * sr):int(t1 * sr)]
+        woerter = [(w0 - t0, w1 - t0, w) for w0, w1, w in
+                   el.woerter_aus_zeichen(zeichen[b0:b1], starts[b0:b1], enden[b0:b1])]
+        out.append((stueck, len(stueck) / sr, woerter))
+    return out
 
 
 def sprechen(szenen, vcfg, lang, tmp, sr=24000):
