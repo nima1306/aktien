@@ -6,8 +6,11 @@ Verglichen werden die in Deutschland am häufigsten gescannten Produkte. Es werd
 
 Datenquelle: Open Food Facts (Open Database License) - die Quelle steht in jedem Video.
 """
+import json
+import os
 import random
 import re
+import time
 from datetime import date, timedelta
 
 import requests
@@ -16,7 +19,6 @@ NAME = "ernaehrung"
 BRAND = "FOOD-CHECK"
 QUELLEN = "Open Food Facts (Herstellerangaben)"
 DISCLAIMER = "Keine Ernährungsberatung"
-API = "https://world.openfoodfacts.org/api/v2/search"
 WUERFEL_G = 3.0                     # ein Stück Würfelzucker wiegt etwa 3 g
 
 # portion = Bezugsgröße für den Aufhänger (immer im Video genannt), who = WHO-Vergleich sinnvoll?
@@ -62,13 +64,53 @@ def produktname(p):
     return name[:42].rstrip(" ,-") if name else ""
 
 
+CACHE = os.path.join("speicher", "ernaehrung_produkte.json")
+FELDER = "code,product_name,product_name_de,brands,nutriments,nutriscore_grade"
+KOPF = {"User-Agent": "TikTok-Videobot/1.0 (privates Projekt)"}
+
+
+def _abfragen(kat):
+    """Open Food Facts ist oft langsam oder kurz überlastet: mehrere Versuche, zwei Schnittstellen."""
+    wege = [("https://world.openfoodfacts.org/api/v2/search",
+             {"categories_tags_en": kat["tag"], "countries_tags_en": "germany", "sort_by": "unique_scans_n",
+              "page_size": 60, "fields": FELDER}),
+            ("https://world.openfoodfacts.org/cgi/search.pl",
+             {"action": "process", "tagtype_0": "categories", "tag_contains_0": "contains", "tag_0": kat["tag"],
+              "tagtype_1": "countries", "tag_contains_1": "contains", "tag_1": "germany",
+              "sort_by": "unique_scans_n", "page_size": 60, "json": 1, "fields": FELDER})]
+    fehler = None
+    for versuch in range(3):
+        for url, params in wege:
+            try:
+                r = requests.get(url, timeout=60, headers=KOPF, params=params)
+                r.raise_for_status()
+                produkte = r.json().get("products") or []
+                if produkte:
+                    return produkte
+            except (requests.RequestException, ValueError) as e:
+                fehler = e
+        time.sleep(10 * (versuch + 1))
+    raise RuntimeError(f"nicht erreichbar ({str(fehler)[:60]})")
+
+
 def laden(kat, n=6):
-    """Die beliebtesten Produkte einer Kategorie in Deutschland mit vollständigen Nährwerten."""
-    r = requests.get(API, timeout=30, headers={"User-Agent": "TikTok-Videobot/1.0 (privates Projekt)"}, params={
-        "categories_tags_en": kat["tag"], "countries_tags_en": "germany", "sort_by": "unique_scans_n",
-        "page_size": 60, "fields": "code,product_name,product_name_de,brands,nutriments,nutriscore_grade"})
-    r.raise_for_status()
-    return auswahl(r.json().get("products") or [], kat, n)
+    """Die beliebtesten Produkte einer Kategorie in Deutschland mit vollständigen Nährwerten.
+    Klappt die Abfrage nicht, nimmt der Bot die zuletzt gespeicherten Daten der Kategorie."""
+    try:
+        cache = json.load(open(CACHE, encoding="utf-8"))
+    except (OSError, ValueError):
+        cache = {}
+    try:
+        produkte = _abfragen(kat)
+        cache[kat["tag"]] = produkte
+        os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+        json.dump(cache, open(CACHE, "w", encoding="utf-8"), ensure_ascii=False)
+    except Exception as e:
+        if not cache.get(kat["tag"]):
+            raise
+        print(f"  Open Food Facts ({kat['tag']}): {str(e)[:60]} - nehme gespeicherte Daten")
+        produkte = cache[kat["tag"]]
+    return auswahl(produkte, kat, n)
 
 
 def auswahl(produkte, kat, n=6):
@@ -211,11 +253,15 @@ def video_plan(erledigt, tag_nr, daten_quelle=None):
     start = date.today().toordinal() % len(KATEGORIEN)
     reihe = KATEGORIEN[start:] + KATEGORIEN[:start]
     reihe = [k for k in reihe if k["tag"] not in kuerzlich] + [k for k in reihe if k["tag"] in kuerzlich]
+    ausfaelle = 0
     for kat in reihe[:5]:
         try:
             produkte = (daten_quelle or laden)(kat)
         except Exception as e:
             print(f"  Open Food Facts ({kat['tag']}): {str(e)[:70]}")
+            ausfaelle += 1
+            if ausfaelle >= 2:          # Dienst ist gerade weg - nicht ewig weiterprobieren
+                break
             continue
         plan = video(kat, produkte, tag_nr)
         if plan:
