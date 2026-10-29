@@ -36,12 +36,24 @@ class ThemaSzenen:
         center(d, x.get("kicker", ""), 640, passend(d, x.get("kicker", ""), "black", 58, W - 2 * M), C["muted"])
         pop = 1 + 0.08 * math.sin(min(1.0, t / 0.35) * math.pi)
         big = x.get("gross", "")
-        f = passend(d, big, "black", int(170 * pop), int((W - 2 * M) * pop), 80)
-        center(d, big, 720 - (f.size - 170) * 0.5, f, C[x.get("farbe", "green")])
+        maxw = int((W - 2 * M) * pop)
+        unten = 0
+        f = passend(d, big, "black", int(170 * pop), maxw, 80)
+        if tw(d, big, f) <= maxw:
+            center(d, big, 720 - (f.size - 170) * 0.5, f, C[x.get("farbe", "green")])
+        else:                                   # zu lang (z. B. zwei Vereinsnamen) -> zwei Zeilen
+            teile = big.split(" – ", 1)
+            zeilen = [teile[0] + " –", teile[1]] if len(teile) == 2 else wrap(d, big, font(90, "black"), maxw)[:2]
+            groesse = min(int(92 * pop), min(passend(d, z, "black", int(92 * pop), maxw, 40).size for z in zeilen))
+            f = font(groesse, "black")
+            y0 = 822 - len(zeilen) * (groesse + 10) / 2
+            unten = 45
+            for i, z in enumerate(zeilen):
+                center(d, z, y0 + i * (groesse + 10), f, C[x.get("farbe", "green")])
         if x.get("sub"):
-            center(d, x["sub"], 930, passend(d, x["sub"], "medium", 48, W - 2 * M), C["ink"])
+            center(d, x["sub"], 930 + unten, passend(d, x["sub"], "medium", 48, W - 2 * M), C["ink"])
         if x.get("sub2"):
-            center(d, x["sub2"], 1010, passend(d, x["sub2"], "medium", 40, W - 2 * M), C["muted"])
+            center(d, x["sub2"], 1010 + unten, passend(d, x["sub2"], "medium", 40, W - 2 * M), C["muted"])
 
     # ---- Rangliste mit Balken (z. B. Zucker je Produkt, Torjäger)
     def liste(self, d, t, dur, img=None):
